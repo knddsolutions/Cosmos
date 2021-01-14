@@ -22,8 +22,9 @@ from sirius.config.constants import DB_NAME, APP_NAME, \
                                   COLLECTION, APP_DNS, \
                                   SCHEMA_FILE, ROOT_USERS, \
                                   PORT, LOG_PATH, DEV_USER, \
-                                  CONFIRM_CENTER_TEMPLATE, \
+                                  CENTER_CONFIRMATION_TEMPLATE, \
                                   CENTER_APPROVED_TEMPLATE, \
+                                  CENTER_DECLINED_TEMPLATE, \
                                   SUCCESS_PAGE_TEMPLATE, \
                                   CENTER_REQUEST_TEMPLATE, \
                                   CRON_SLEEP_SECONDS, \
@@ -44,6 +45,7 @@ apiClient = VaApi(mongoClient, logger)
 
 
 #--------CENTER API'S---------
+#Api for center registration
 class CenterRegistration(Resource):
     def post(self):
 
@@ -103,7 +105,7 @@ class CenterRegistration(Resource):
         
         return apiClient.success("SUCCESS! Please check email for confirmation and further instrustions")
 
-#Add or redeem points from user account
+#Api to add or redeem points to user acount
 class LoyaltyPoints(Resource):
     def post(self):
 
@@ -145,7 +147,7 @@ class LoyaltyPoints(Resource):
         if not user['Results']:
             return apiClient.notFound("User account could not be found")
             
-        getPoints = mongoClient.getDocument(COLLECTION['points'], {"userID": user['userID']})
+        getPoints = mongoClient.getDocument(COLLECTION['points'], {"UserID": user['UserID']})
         if not getPoints['Results']:
             return apiClient.notFound("Users points could not be found")
 
@@ -160,11 +162,14 @@ class LoyaltyPoints(Resource):
         if result < 0:
             return apiClient.badRequest("User does not have enough points...Please try again!")
 
-        #TODO UPDATE COLLECTION
+        if not mongoClient.updateDocument(COLLECTION['points'], {"Points": result}, {"UserID": user['UserID']}):
+            logger.error("Failed to update new point value for {}".format(user['UserID']))
+            return apiClient.internalServerError()
 
-        #TODO RETURN SUCCESS
+        return apiClient.success({})
 
-class CenterApproval(Resource):
+#Api to approve center registration
+class ApproveCenter(Resource):
     def post(self):
         
         #TODO CHECK FOR DEVELOPER ADMIN PRIVILAGES??
@@ -176,16 +181,16 @@ class CenterApproval(Resource):
             return apiClient.badRequest("Invalid json")
             
         #Verify body with schema
-        retCode, retMessage = VaSchema.verifyPost(SCHEMA['externalApis']['centerApproval'], body)
+        retCode, retMessage = VaSchema.verifyPost(SCHEMA['externalApis']['approveCenter'], body)
         
         if not retCode:
-            logger.warn(f"Failed registration: {retMessage}")
+            logger.warn(f"Failed approval: {retMessage}")
             logger.warn(f"Invalid data: {body}")
             return apiClient.badRequest("Invalid parameters")
             
         center = mongoClient.getDocument(COLLECTION['pending'], {"Bpaa": body['Bpaa']})
         if not center['Results']:
-            logger.error("Failed to locate pending bpaa number {}".format(body['Bpaa'])")
+            logger.error("Failed to locate pending bpaa number {}".format(body['Bpaa']))
             return apiClient.badRequest("Failed to locate pending center")
             
         #TODO GENERATE CENTER ID??
@@ -207,13 +212,55 @@ class CenterApproval(Resource):
         SendEmail(center['Email'].lower(), "Your Approved!", emailBody)
         
         return apiClient.success({})
+
+#Api to decline center registration
+class DeclineCenter(Resource):
+    def post(self):
         
-#TODO CREATE CENTER DECLINE API
+        #TODO CHECK FOR DEVELOPER ADMIN PRIVILAGES??
+      
+        #Load json
+        try:
+            body = json.loads(request.data)
+        except Exception as e:
+            return apiClient.badRequest("Invalid json")
+            
+        #Verify body with schema
+        retCode, retMessage = VaSchema.verifyPost(SCHEMA['externalApis']['declineCenter'], body)
+        if not retCode:
+            logger.warn(f"Failed to decline center: {retMessage}")
+            logger.warn(f"Invalid data: {body}")
+            return apiClient.badRequest("Invalid parameters")
+            
+        #Delete doc from pending collection
+        if not mongoClient.deleteDocument(COLLECTION['pending'], {"Bpaa": body['Bpaa']}):
+            logger.error("Failed to delete declined centers data under Bpaa number {}".format(body['Bpaa']))
+            return apiClient.badRequest("Failed to decline center")
+            
+        #Send decline email to center registrant
+        with open(CENTER_DECLINED_TEMPLATE, 'r') as stream:
+            emailBodyTemplate = stream.read()
+        emailBody = emailBodyTemplate.format(logo_location=LOGO_URL, user_email=center['Name'])
+        SendEmail(center['Email'].lower(), "An error occured...", emailBody)
+
+#Api for redeeming coupons
+class Coupons(Resource):
+    def post(self):
         
+        #TODO
+        
+#Api for suspending center services
+class SuspendService(Resource):
+    def post(self):
+    
+        #TODO
+            
 api.add_resource(CenterRegistration, '/center/registration')
-api.add_resource(CenterApproval, '/center/approved')
-api.add_resource(CenterDecline, '/center/declined')
-api.add_resource(Points, 'loyalty/points')
+api.add_resource(ApproveCenter, '/center/approved')
+api.add_resource(DeclineCenter, '/center/declined')
+api.add_resource(Points, '/center/loyalty/points')
+api.add_resource(Coupons, '/center/loyalty/coupons')
+api.add_resource(SuspendService, '/center/suspend-services')
 
 #Run app if main
 #Debug not for production

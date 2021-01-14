@@ -30,10 +30,11 @@ DEV_USER = ["k.development@knddsolutions.com"]
 
 CRON_SLEEP_SECONDS = 86400
 
-CONFIRM_CENTER_TEMPLATE = "/cosmos/sirius/config/confirmCenterTemplate.txt"
+CENTER_CONFIRMATION_TEMPLATE = "/cosmos/sirius/config/confirmCenterTemplate.txt"
 SUCCESS_PAGE_TEMPLATE = "/cosmos/sirius/config/successTemplate.txt"
 CENTER_REQUEST_TEMPLATE = "/cosmos/sirius/config/centerRequestTemplate.txt"
-CENTER_APPROVED_TEMPLATE = "/cosmos/sirius/config/centerApprovedTemplate.txt"
+CENTER_APPROVED_TEMPLATE = "/cosmos/sirius/config/approvedTemplate.txt"
+CENTER_DECLINED_TEMPLATE = "/cosmos/sirius/config/declineTemplate.txt"
 
 
 

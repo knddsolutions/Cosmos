@@ -1,6 +1,6 @@
 externalApis:
     centerRegister:
-        apiUri: "center/registration"
+        apiUri: "/center/registration"
         supportedMethods:
             POST: "Open"
         params:
@@ -25,7 +25,7 @@ externalApis:
                 type: "unicode"
                 hidden: True
     loyaltyPoints:
-        apiUri: "loyalty/points"
+        apiUri: "/center/loyalty/points"
         supportedMethods:
             PATCH: "ADMIN"
             GET: "USER"
@@ -40,6 +40,27 @@ externalApis:
                 read-only: False
                 type: "unicode"
                 hidden: False
+    approveCenter:
+        apiUri: "/center/approved"
+        supportedMethods:
+            POST: "ADMIN"
+        params:
+            Bpaa:
+                required: True
+                read-only: True
+                type: "unicode"
+                hidden: True
+    declineCenter:
+        apiUri: "/center/decline"
+        supportedMethods:
+            POST: "ADMIN"
+        params:
+            Bpaa:
+                required: True
+                read-only: True
+                type: "unicode"
+                hidden: True
+            
 
             
 
