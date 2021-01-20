@@ -25,6 +25,10 @@ COLLECTION = {"users": "iamUsers",
               "bpaa": "bpaaNumber",
               "points": "userPoints"}
 
+LOGO_URL = "https://kd-openbowl-service.s3-us-west-2.amazonaws.com/logo/OpenBowl_Logo.png"
+BANNERS_URL = "https://kd-openbowl-service.s3-us-west-2.amazonaws.com/centers/banners/"
+CENTERS_CSV = "https://kd-openbowl-service.s3-us-west-2.amazonaws.com/files/2019+Membership_short.csv"
+
 ROOT_USERS = ["cnelson7265@gmail.com"]
 DEV_USER = ["k.development@knddsolutions.com"]
 

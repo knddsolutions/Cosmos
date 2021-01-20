@@ -41,7 +41,7 @@ externalApis:
                 type: "unicode"
                 hidden: False
     approveCenter:
-        apiUri: "/center/approved"
+        apiUri: "/center/confirmed"
         supportedMethods:
             POST: "ADMIN"
         params:
@@ -50,8 +50,13 @@ externalApis:
                 read-only: True
                 type: "unicode"
                 hidden: True
+            Path:
+                required: True
+                read-only: True
+                type: "unicode"
+                hidden: True
     declineCenter:
-        apiUri: "/center/decline"
+        apiUri: "/center/declined"
         supportedMethods:
             POST: "ADMIN"
         params:

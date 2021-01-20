@@ -1,6 +1,7 @@
 from flask import Flask, request
 from flask_restplus import Api, Resource
 from passlib.hash import sha256_crypt
+import csv
 import time
 import json
 import re
@@ -29,6 +30,8 @@ from sirius.config.constants import DB_NAME, APP_NAME, \
                                   CENTER_REQUEST_TEMPLATE, \
                                   CRON_SLEEP_SECONDS, \
                                   LOGO_URL, \
+                                  BANNERS_URL, \
+                                  CENTERS_CSV
 
 
 #Set name of flask instance
@@ -64,14 +67,14 @@ class CenterRegistration(Resource):
             return apiClient.badRequest("Invalid parameters")
 
         #Check if center is already registered
-        center = mongoClient.getDocument(COLLECTION['centers'], {"number":body['Bpaa']})
+        center = mongoClient.getDocument(COLLECTION['centers'], {"MemberID":body['Bpaa']})
 
         if center['Results']:
             logger.error("A center is already registered under BPAA number {}".format(body['bpaa']))
             return apiClient.badRequest("This bowling center has already been registered")
 
         #Check if BPAA number is valid
-        if not bpaa = mongoClient.getDocument(COLLECTION['bpaa'], {"number": body['Bpaa']}):
+        if not bpaa = mongoClient.getDocument(COLLECTION['members'], {"MemberID": body['Bpaa']}):
             logger.error("BPAA number {} is not valid".format(body['Bpaa']))
             return apiClient.badRequest("Please enter a valid BPAA number")
 
@@ -80,7 +83,7 @@ class CenterRegistration(Resource):
 
         #Create temp data
         tempData = {"Center" = body['Name'],
-                    "Bpaa" = body['Bpaa'],
+                    "MemberID" = body['Bpaa'],
                     "Email" = body['Email'],
                     "Phone" = body['Phone'],
                     "Timestamp" = ts}
@@ -169,7 +172,7 @@ class LoyaltyPoints(Resource):
         return apiClient.success({})
 
 #Api to approve center registration
-class ApproveCenter(Resource):
+class ConfirmCenterRegistration(Resource):
     def post(self):
         
         #TODO CHECK FOR DEVELOPER ADMIN PRIVILAGES??
@@ -188,12 +191,15 @@ class ApproveCenter(Resource):
             logger.warn(f"Invalid data: {body}")
             return apiClient.badRequest("Invalid parameters")
             
-        center = mongoClient.getDocument(COLLECTION['pending'], {"Bpaa": body['Bpaa']})
+        center = mongoClient.getDocument(COLLECTION['pending'], {"MemberID": body['Bpaa']})
         if not center['Results']:
             logger.error("Failed to locate pending bpaa number {}".format(body['Bpaa']))
             return apiClient.badRequest("Failed to locate pending center")
             
         #TODO GENERATE CENTER ID??
+        
+        #Insert file path for center logo
+        center['Logo'] = BANNERS_URL + body['Path']
         
         #Insert pending center into active centers collection
         if not mongoClient.createDocument(COLLECTION['centers'], center):
@@ -214,7 +220,7 @@ class ApproveCenter(Resource):
         return apiClient.success({})
 
 #Api to decline center registration
-class DeclineCenter(Resource):
+class DeclineCenterRegistration(Resource):
     def post(self):
         
         #TODO CHECK FOR DEVELOPER ADMIN PRIVILAGES??
@@ -243,6 +249,12 @@ class DeclineCenter(Resource):
         emailBody = emailBodyTemplate.format(logo_location=LOGO_URL, user_email=center['Name'])
         SendEmail(center['Email'].lower(), "An error occured...", emailBody)
 
+#Api for pulling all registered centers
+class RegisteredCenters(Resource):
+    def get(self):
+    
+        #TODO
+    
 #Api for redeeming coupons
 class Coupons(Resource):
     def post(self):
@@ -254,13 +266,40 @@ class SuspendService(Resource):
     def post(self):
     
         #TODO
+        
+#Api for updating centers and bpaa #s in bpaa collection
+class UpdateMembers(Resource):
+    def post(self):
+        
+        #Open csv file in read mode
+        with open(CENTERS_CSV, 'r') as csvfile:
+            header = ["MemberID", "Center", "Contact"]
+            csvreader = csv.reader(csvfile)
+            
+        #TODO CHECK FOR COLLECTIONS AND DROP ALL
+        
+        for row in csvreader:
+            doc={}
+            for n in range(0,len(header)):
+            doc[header[n]] = row[n]
+            
+            res = mongoClient.createDocument(COLLECTION['members'], doc)
+            
+            if res != 200:
+                logger.error("Failed to insert csv file")
+                return apiClient.internalServerError()
+                
+            
+        
+        
             
 api.add_resource(CenterRegistration, '/center/registration')
-api.add_resource(ApproveCenter, '/center/approved')
-api.add_resource(DeclineCenter, '/center/declined')
+api.add_resource(ConfirmCenterRegistration, '/center/confirmed')
+api.add_resource(DeclineCenterRegistration, '/center/declined')
 api.add_resource(Points, '/center/loyalty/points')
 api.add_resource(Coupons, '/center/loyalty/coupons')
 api.add_resource(SuspendService, '/center/suspend-services')
+api.add_resource(UpdateBpaa, '/center/update/members')
 
 #Run app if main
 #Debug not for production
