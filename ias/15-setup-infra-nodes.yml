@@ -1,0 +1,17 @@
+
+- hosts: localhost
+  roles:
+  - common
+  - aws
+  - inventory
+  tasks:
+  - debug: var=remote_user
+
+- hosts: kube_master
+  remote_user: ubuntu
+  roles:
+  - common
+  tasks:
+  - name: Configure infra nodes
+    include: tasks/ubuntu-deploy-master.yml
+

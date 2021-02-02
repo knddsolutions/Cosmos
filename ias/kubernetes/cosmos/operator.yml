@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cosmos-operator
+spec:
+  selector:
+    matchLabels:
+      app: cosmos-operator
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: cosmos-operator
+    spec:
+      containers:
+      - image: localhost:30000/cosmos/neptune:latest
+        imagePullPolicy: Always
+        name: cosmos-operator
+      terminationGracePeriodSeconds: 5
+      serviceAccountName: cosmos-operator

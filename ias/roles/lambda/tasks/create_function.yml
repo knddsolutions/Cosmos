@@ -1,0 +1,50 @@
+- set_fact:
+    lambda_tmp_path: "/tmp/lambda/{{ item }}"
+
+- name: Ensure directory exists
+  file:
+    path: "{{ lambda_tmp_path }}"
+    state: directory
+   
+- name: Parameterize lambda function script
+  template:
+    src: "templates/{{ item }}.j2"
+    dest: "{{ lambda_tmp_path }}/lambda_function.py"
+
+- name: Create init file
+  file:
+    path: "{{ lambda_tmp_path }}/__init__.py"
+    state: touch
+    
+
+- name: Zip lambda files
+  archive:
+    path: "{{ lambda_tmp_path }}"
+    dest: "/tmp/lambda/{{ item }}.zip"
+    format: zip
+
+- name: Create lambda functions
+  lambda:
+    profile: "{{ aws_profile_name }}"
+    region: "{{ region }}"
+    state: present
+    name: "{{ item }}"
+    zip_file: "/tmp/lambda/{{ item }}.zip"
+    handler: "{{ item }}/lambda_function.lambda_handler"
+    role: "arn:aws:iam::{{ aws_account_id }}:role/LambdaRole"
+    runtime: "python2.7"
+    tags:
+      Environment: "{{ tag_environment }}"
+
+- name: Give permissions
+  lambda_policy:
+    profile: "{{ aws_profile_name }}"
+    region: "{{ region }}"
+    action: "lambda:InvokeFunction"
+    function_name: "{{ item }}"
+    principal: "apigateway.amazonaws.com"
+    state: present
+    statement_id: default
+    source_arn: "arn:aws:execute-api:{{ region }}:{{ aws_account_id }}:*"
+
+

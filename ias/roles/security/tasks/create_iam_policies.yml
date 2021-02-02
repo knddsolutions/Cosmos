@@ -1,0 +1,24 @@
+- set_fact:
+    tmp_dir: "/tmp/iam_policy"
+
+- name: Verify directory exists
+  file:
+    path: "{{ tmp_dir }}"
+    state: directory
+
+- set_fact:
+    template_name: "templates/iam-{{ item | lower }}-policy.j2"
+
+- debug: var=template_name
+
+- name: Create policy file
+  template:
+    src: "templates/iam-{{ item | lower }}-policy.j2"
+    dest: "{{ tmp_dir }}/policy.json"
+
+- name: Create iam policy
+  iam_managed_policy:
+    profile: "{{ aws_profile_name }}"
+    state: present
+    policy_name: "{{ item }}"
+    policy: "{{ lookup('file', '/tmp/iam_policy/policy.json') }}"

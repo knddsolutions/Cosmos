@@ -1,0 +1,11 @@
+Add InfraRole to node
+Tag node kubernetes.io/cluster/Production : owned
+Run kubeadm init `kubeadm init --pod-network-cidr=10.244.0.0/16 --node-name=$(curl http://169.254.169.254/latest/meta-data/local-hostname)`
+Modify `/etc/systemd/system/kubelet.service.d/10-kubeadm.conf`, `/etc/kubernetes/manifests/kube-apiserver.yaml`, `/etc/kubernetes/manifests/kube-controller-manager.yaml` with cloud-provider=aws
+Change mongo upgrade strategy
+Fix playbook for kube config
+Split 20 into sync and re-deploy
+Modify ip in api server yaml
+run-deploy.sh
+
+Fix startup script

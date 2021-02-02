@@ -1,0 +1,8 @@
+- include_tasks: create_iam_policies.yml
+  with_items: "{{ iam_policies }}"
+
+- include_tasks: setup_security_groups.yml
+  with_dict: "{{ security_groups }}"
+
+- include_tasks: setup_iam_roles.yml
+  with_dict: "{{ iam_roles }}"

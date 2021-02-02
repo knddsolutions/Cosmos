@@ -1,0 +1,6 @@
+- hosts: localhost
+  roles:
+  - common
+  - aws
+  - deploy-nodes
+  gather_facts: true

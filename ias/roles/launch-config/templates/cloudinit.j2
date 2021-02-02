@@ -1,0 +1,6 @@
+#!/bin/bash
+apt-get update && apt-get install -y apt-transport-https curl python
+curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
+python get-pip.py
+pip install openshift
+echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDQtihK4qecnoj8XlckEXJpJE0+JeoVlkh2Lu38IV/wmtFpAiz0Q4M8dtiRkdRyjXRZ9okb5CDxhEXU5e0SXuyRAyv8oE1G2NanR/RS3kuxyseG7e1EY+KBFORmMNOWuDZ/BfdcQjKWGqsg8B+lktP7m805X0mF1XW8/5NlV9ZRbHbf2k/X/CgrdqrDM+U4nTz6MPLfiZlZ6gHkAKoNpnYzZpAvuX4oMMXNUjDRBOJKTBHkybFtwFvkLswbzmRsYKi7SrE8oGq+abo+40Hu2d2iKmKlfs3nydm/QKvaTnGx766xBM8lTbi3CCFXx8HpWMX8m5sAyH0aaw+Y0a237KoT bubba@localhost.localdomain" >> /home/ubuntu/.ssh/authorized_keys

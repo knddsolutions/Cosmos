@@ -1,0 +1,29 @@
+security_groups:
+  infra:
+    name: "infra"
+    description: "Infra security group"
+    rules:
+    - proto: tcp
+      ports:
+      - 80
+      cidr_ip: 0.0.0.0/0
+      rule_desc: "Allow all on port 80"
+    - proto: tcp
+      ports:
+      - 22
+      cidr_ip: 73.168.236.175/32
+      rule_desc: "Allow ssh access from control node"
+
+iam_policies:
+  - InfraNodes
+  - LambdaBasicExecution
+
+iam_roles:
+  infra:
+    name: InfraNode
+    policies:
+    - InfraNodes
+  lambda:
+    name: LambdaRole
+    policies:
+    - LambdaBasicExecution

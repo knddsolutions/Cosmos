@@ -1,0 +1,9 @@
+{
+  "ImageId": "{{ ami_id }}",
+  "KeyName": "{{ key_pair_name }}",
+  "InstanceType": "{{ instance_types[item] }}",
+  "SecurityGroups": ["{{ item }}"],
+  "Placement": {
+    "AvailabilityZone": "{{ zone }}"
+  }
+}

@@ -1,0 +1,2 @@
+- include_tasks: create_ec2_instance.yml
+  with_items: "{{ aws_host_types }}"

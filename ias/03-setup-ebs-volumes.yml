@@ -1,0 +1,8 @@
+# playbook to setulp ebs volumes
+
+- hosts: localhost
+  roles:
+  - common
+  - aws
+  - ebs
+

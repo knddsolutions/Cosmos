@@ -1,0 +1,35 @@
+apiVersion: kddevelop.org/v1
+kind: Cosmos
+metadata:
+  name: prod
+  namespace: default
+spec:
+  mongo:
+    volumeInfo:
+      kind: awsElasticBlockStore
+      params:
+        volumeID: "{{ mongo_volume_id }}"
+        fsType: xfs
+  rproxy:
+    replicas: 1
+    appImage: localhost:30000/cosmos/saturn:latest
+    pullPolicy: Always
+  auth:
+    appImage: localhost:30000/cosmos/mars:latest
+    rootUsers: "cnelson7265@gmail.com"
+    pullPolicy: Always
+  nginx:
+    appImage: localhost:30000/cosmos/earth:latest
+    pullPolicy: Always
+  email:
+    appImage: localhost:30000/cosmos/pan:latest
+    pullPolicy: Always
+    serverName: smtp.gmail.com
+    serverPort: 465
+    serverUsername: verify@hotimportnights.com
+    serverPassword: HINconnect2020
+    serverFromName: "Hot Import Nights"
+  env:
+    DNS_NAME: "{{ app_dns }}"
+    HTML_PROTOCOL: "{{ app_protocol }}"
+

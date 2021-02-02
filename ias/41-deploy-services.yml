@@ -1,0 +1,52 @@
+# How to run
+# ansible-playbook 41-deploy-services.yml -e '{"infra_services": ["sirius"]}'
+
+- hosts: localhost
+  roles:
+    - common
+    - aws
+    - inventory
+
+  tasks:
+  - set_fact:
+      tmp_folder: "/tmp/docker_images"
+
+  - name: clean temp folder
+    file:
+      state: absent
+      path: "{{ tmp_folder }}"
+
+  - name: create temp folder
+    file:
+      state: directory
+      mode: '0777'
+      path: "{{ tmp_folder }}"
+
+- hosts: kube_minion[0]
+  remote_user: ubuntu
+  roles:
+    - common
+    - temp-dir
+
+  tasks:
+  - set_fact:
+      local_tmp_folder: "/tmp/docker_images"
+
+  - name: Parameterize deployment file
+    template:
+      src: "kubernetes/{{ item }}-deployment.yaml"
+      dest: "{{ cloud_tmp_folder }}/{{ item }}-deployment.yaml"
+    with_items: "{{ infra_services }}"
+
+  - name: Parameterize service file
+    template:
+      src: "kubernetes/{{ item }}-service.yaml"
+      dest: "{{ cloud_tmp_folder }}/{{ item }}-service.yaml"
+    with_items: "{{ infra_services }}"
+
+  - name: Apply files
+    shell: "python3 apply-config.py"
+    args:
+      chdir: "{{ cloud_tmp_folder }}"
+    register: apply_out
+

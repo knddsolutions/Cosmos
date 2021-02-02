@@ -1,0 +1,51 @@
+- set_fact:
+    tmp_path: "/tmp/apigateway"
+
+- name: Ensure directory exists
+  file:
+    path: "{{ tmp_path }}"
+    state: directory
+
+- name: Get ec2 host
+  ec2_instance_facts:
+    profile: "{{ aws_profile_name }}"
+    region: "{{ region }}"
+    filters:
+      instance-state-name: running
+      "tag:Environment": "{{ tag_environment }}"
+      #TODO mark node as web
+  register: ec2_instances
+
+- set_fact:
+    ec2_host_dns: "{{ ec2_instances.instances[0].public_dns_name }}:8081"
+
+- name: Get facts about lambda functions
+  lambda_facts:
+    profile: "{{ aws_profile_name}}"
+    region: "{{ region }}"
+  register: lambda_functions
+
+- set_fact:
+    get_home_lambda_arn: "{{ lambda_functions.ansible_facts.lambda_facts.function['get_home'].function_arn }}"
+    get_registration_lambda_arn: "{{ lambda_functions.ansible_facts.lambda_facts.function['get_registration'].function_arn }}"
+    get_schedule_lambda_arn: "{{ lambda_functions.ansible_facts.lambda_facts.function['get_schedule'].function_arn }}"
+
+- debug: var=get_home_lambda_arn
+- debug: var=get_registration_lambda_arn
+- debug: var=get_schedule_lambda_arn
+
+- name: Parameterize apigateway swagger spec
+  template:
+    src: templates/aws-api-gateway-hin-connect.j2
+    dest: "{{ tmp_path }}/aws-api-gateway-hin-connect.json"
+
+- name: Deploy apigateway
+  aws_api_gateway:
+    profile: "{{ aws_profile_name }}"
+    region: "{{ region }}"
+    stage: "Production"
+    swagger_file: "{{ tmp_path }}/aws-api-gateway-hin-connect.json"
+  register: output
+
+- debug: var=output
+
