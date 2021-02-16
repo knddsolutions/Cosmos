@@ -1,0 +1,15 @@
+- name: clean tmep folder
+  file:
+    state: absent
+    path: "{{ cloud_tmp_folder }}"
+
+- name: Create temp folder
+  file:
+    state: directory
+    mode: '0777'
+    path: "{{ cloud_tmp_folder }}"
+
+- name: Add apply script
+  template:
+    src: templates/apply-config.py
+    dest: "{{ cloud_tmp_folder }}/apply-config.py"

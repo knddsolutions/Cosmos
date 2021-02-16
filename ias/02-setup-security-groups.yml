@@ -1,0 +1,7 @@
+# Setup security groups on aws
+
+- hosts: localhost
+  roles:
+  - common
+  - aws
+  - security

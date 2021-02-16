@@ -1,0 +1,2 @@
+- include_tasks: create_function.yml
+  with_items: "{{ aws_lambda_functions }}"

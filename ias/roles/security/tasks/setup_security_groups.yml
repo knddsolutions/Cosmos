@@ -1,0 +1,9 @@
+- name: Create security groups
+  ec2_group:
+    profile: "{{ aws_profile_name }}"
+    region: "{{ region }}"
+    name: "{{ item.value.name }}"
+    description: "{{ item.value.description }}"
+    state: present
+    rules: "{{ item.value.rules }}"
+

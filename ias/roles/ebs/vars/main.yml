@@ -1,0 +1,5 @@
+ebs_volumes:
+  mongo:
+    size: 4
+    name: "Mongo"
+ 

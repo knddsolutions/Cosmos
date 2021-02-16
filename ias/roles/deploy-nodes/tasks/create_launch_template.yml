@@ -1,0 +1,18 @@
+- set_fact:
+    user_data: "{{ lookup('template', 'templates/cloudinit.j2') }}"
+
+- name: Create launch template
+  ec2_launch_template:
+    profile: "{{ aws_profile_name }}"
+    region: "{{ region }}"
+    image_id: "{{ ami_id }}"
+    key_name: "{{ key_pair_name }}"
+    instance_type: "{{ instance_types[item] }}"
+    security_groups: "{{ item }}"
+    state: present
+    template_name: "{{ item }}"
+    tags:
+      Environment: "{{ tag_environment }}"
+      NodeType: "{{ item }}"
+      "kubernetes.io/cluster/production": "owned"
+    user_data: "{{ lookup('file', 'templates/cloudinit.j2') | b64encode}}"

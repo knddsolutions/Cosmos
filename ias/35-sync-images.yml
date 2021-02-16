@@ -1,0 +1,26 @@
+# How to run
+# ansible-playbook 12-sync-images.yml -e '{"infra_services": ["aria", "cosmo"]}'
+
+- hosts: localhost
+  roles:
+    - common
+    - aws
+    - inventory
+
+  tasks:
+  - name: Open tunnel
+    shell: "ssh -fNL 5001:localhost:30000 ubuntu@{{ groups['kube_minion'][0] }}"
+    register: output
+
+  - debug: var=output
+
+  - name: tag and push
+    docker_image:
+      name: "{{ item }}:latest"
+      repository: "localhost:5001/cosmos/{{ item }}:latest"
+      push: yes
+      source: local
+    with_items: "{{ infra_services }}"
+
+  - name: kill tunnel
+    shell: "pkill -f '{{ output.cmd }}'"

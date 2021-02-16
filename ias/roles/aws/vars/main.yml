@@ -1,0 +1,19 @@
+aws_account_id: "805908283827"
+aws_profile_name: "805908283827"
+
+# Lambda
+aws_lambda_functions: []
+
+# EC2 data
+iam_role_mapping:
+  infra: InfraNodes
+  lambda: LambdaRole
+
+ami_id: "ami-005bdb005fb00e791"
+
+key_pair_name: "primary"
+
+instance_types:
+  infra: "t3.small"
+
+spot_price: "0.0209"

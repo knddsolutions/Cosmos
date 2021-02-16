@@ -1,0 +1,18 @@
+version: 0.1
+log:
+  level: debug
+  formatter: text
+  fields:
+    service: registry
+    environment: production
+loglevel: debug
+http:
+  addr: :5000
+  headers:
+    X-Content-Type-Options: [nosniff]
+storage:
+  s3:
+    region: "{{ region }}"
+    bucket: kd-{{ aws_account_id }}-docker-registry-{{ region }}-{{ tag_environment | lower }}
+  redirect:
+    disable: true

@@ -1,0 +1,20 @@
+- name: Get existing ec2 instances
+  ec2_instance_facts:
+    profile: "{{ aws_profile_name }}"
+    region: "{{ region }}"
+    filters:
+      instance-state-name: running
+      "tag:Environment": "{{ tag_environment }}"
+  register: ec2_instances
+
+- name: Add hosts to dynamic inventory
+  add_host:
+    hostname: "{{ item.public_ip_address }}"
+    group: kube_minion
+  with_items: "{{ ec2_instances.instances }}"
+
+- name: Add hosts to dynamic inventory
+  add_host:
+    hostname: "{{ item.public_ip_address }}"
+    group: kube_master
+  with_items: "{{ ec2_instances.instances }}"

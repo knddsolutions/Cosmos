@@ -1,0 +1,2 @@
+mongodump --archive --db=Global-Aria | mongorestore --archive  --nsFrom='Global-Aria.*' --nsTo='Global-Mars.*'
+

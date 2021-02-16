@@ -1,0 +1,12 @@
+- name: Create ebs volumes
+  ec2_vol:
+    profile: "{{ aws_profile_name }}"
+    region: "{{ region }}"
+    zone: "{{ zone }}"
+    state: present
+    volume_size: "{{ item.value.size }}"
+    volume_type: gp2
+    name: "{{ item.value.name }}"
+    tags:
+      Environment: "{{ tag_environment }}"
+  with_dict: "{{ ebs_volumes }}"

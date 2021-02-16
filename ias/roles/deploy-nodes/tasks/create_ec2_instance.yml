@@ -1,0 +1,53 @@
+#- name: Get facts about current instances TODO
+
+# If current instances is more than desired don't launch any
+# If number of instances is more than desired delete instances
+
+- name: Create ec2 instance
+  ec2:
+    profile: "{{ aws_profile_name }}"
+    region: "{{ region }}"
+    assign_public_ip: yes
+    group: "{{ item }}"
+    image: "{{ ami_id }}"
+    instance_profile_name: "{{ iam_role_mapping[item] }}"
+    instance_tags:
+      Environment: "{{ tag_environment }}"
+      NodeType: "{{ item }}"
+    instance_type: "{{ instance_types[item] }}"
+    key_name: "{{ key_pair_name }}"
+    spot_price: "{{ spot_price }}"
+    user_data: "{{ lookup('file', 'templates/cloudinit.j2') | b64encode }}"
+    wait: yes
+    zone: "{{ zone }}"
+  register: ec2_instances
+
+#- name: Create ec2 instance
+#  ec2:
+#    profile: "{{ aws_profile_name }}"
+#    region: "{{ region }}"
+#    count_tag:
+#      Environment: "{{ tag_environment }}"
+#      NodeType: "{{ item }}"
+#    _count: 1
+#    group: "{{ item }}"
+#    image: "{{ ami_id }}"
+#    instance_profile_name: "{{ iam_role_mapping[item] }}"
+#    instance_tags:
+#      Environment: "{{ tag_environment }}"
+#      NodeType: "{{ item }}"
+#    instance_type: "{{ instance_types[item] }}"
+#    key_name: "{{ key_pair_name }}"
+#    spot_price: "{{ spot_price }}"
+#    user_data: "{{ lookup('file', 'templates/cloudinit.j2') | b64encode }}"
+#    wait: yes
+#    zone: "{{ zone }}"
+#  register: ec2_instances
+
+- name: Wait for ssh connection
+  delegate_to: "{{ item.public_dns_name }}"
+  wait_for_connection:
+    delay: 30
+    timeout: 320
+  loop: "{{ ec2_instances.instances }}"
+

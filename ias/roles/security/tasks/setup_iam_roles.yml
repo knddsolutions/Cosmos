@@ -1,0 +1,14 @@
+- template:
+    src: "templates/{{ item.value.name | lower }}-trust-relationship.j2"
+    dest: "/tmp/tmp.json"
+
+- set_fact:
+    file_name: "templates/{{ item.value.name | lower }}-trust-relationship.j2"
+
+- name: Create iam role
+  iam_role:
+    profile: "{{ aws_profile_name }}"
+    state: present
+    assume_role_policy_document: "{{ lookup('template', file_name) }}"
+    managed_policy: "{{ item.value.policies }}"
+    name: "{{ item.value.name }}"

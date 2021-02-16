@@ -1,0 +1,5 @@
+ec2_data:
+  instance_type: spot
+  node_type: t3.small
+  root_volume_size: 8
+

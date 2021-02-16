@@ -1,0 +1,13 @@
+- set_fact:
+    policy_template: "templates/aws-s3-{{ item }}-policy.j2"
+
+- name: Create s3 bucket
+  vars:
+    bucket_name: "kd-{{ aws_account_id }}-{{ item }}-{{ region }}-{{ tag_environment | lower }}"
+    policy_json: "{{ lookup('template', policy_template) }}"
+  s3_bucket:
+    profile: "{{ aws_profile_name }}"
+    policy: "{{ policy_json }}"
+    name: "{{ bucket_name }}"
+    region: "{{ region }}"
+    validate_certs: no

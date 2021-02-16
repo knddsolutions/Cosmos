@@ -1,0 +1,42 @@
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: Deployment
+metadata:
+  name: sirius
+spec:
+  selector:
+    matchLabels:
+      app: sirius
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: sirius
+    spec:
+      containers:
+      - name: sirius
+        imagePullPolicy: IfNotPresent
+        image: localhost:30000/cosmos/sirius:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: APP_NAME
+          value: "sirius"
+        - name: MONGO_DNS
+          value: cosmos-prod-mongo.default.svc.cluster.local
+        - name: SATURN_DNS
+          value: cosmos-prod-saturn.default.svc.cluster.local
+        - name: MARS_DNS
+          value: cosmos-prod-mars.default.svc.cluster.local
+        - name: PAN_DNS
+          value: cosmos-prod-pan.default.svc.cluster.local
+        - name: EARTH_DNS
+          value: cosmos-prod-earth.default.svc.cluster.local
+        - name: DNS_NAME
+          value: ""
+
+      terminationGracePeriodSeconds: 5
+

@@ -1,0 +1,45 @@
+- hosts: localhost
+  roles:
+  - common
+  - aws
+  - inventory
+
+- hosts: kube_minion[0]
+  remote_user: ubuntu
+  roles:
+    - common
+    - aws
+    - temp-dir
+
+  tasks:
+  - name: Make sure destination exists
+    file:
+      path: "/etc/kubernetes/registry_config"
+      state: directory
+      mode: 0666
+    become: true
+
+  - name: Parameterize registry config file
+    template:
+      src: templates/registry-conf.j2
+      dest: "/etc/kubernetes/registry_config/config.yml"
+    become: true
+
+  - name: Parameterize registry rc file
+    copy:
+      src: kubernetes/kube-registry.yaml
+      dest: "{{ cloud_tmp_folder }}/kube-registry.yaml"
+
+  - name: Parameterize registry service file
+    copy:
+      src: kubernetes/kube-registry-service.yaml
+      dest: "{{ cloud_tmp_folder }}/kube-registry-service.yaml"
+
+  - name: Apply files
+    shell: "python3 apply-config.py"
+    args:
+      chdir: "{{ cloud_tmp_folder }}"
+    register: apply_out
+
+  - debug: var=apply_out
+

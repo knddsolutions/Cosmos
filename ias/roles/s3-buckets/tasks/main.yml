@@ -1,0 +1,2 @@
+- include_tasks: create_s3_buckets.yml
+  with_items: "{{ s3_bucket_names }}"

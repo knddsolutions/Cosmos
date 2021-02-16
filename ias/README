@@ -1,0 +1,6 @@
+Spot request:
+  - Make sure region is us-west-2a
+  - Check only t3.small
+
+ApiGateway:
+  - Update dns mapping

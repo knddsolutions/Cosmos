@@ -1,0 +1,78 @@
+# How to run
+# ansible-playbook 20-deploy-services.yml -e '{"infra_services": ["aria", "cosmo"]}'
+
+- hosts: localhost
+  roles:
+    - common
+    - aws
+    - inventory
+
+  tasks:
+  - name: Gather facts about ebs volumes
+    ec2_vol_facts:
+      profile: "{{ aws_profile_name }}"
+      region: "{{ region }}"
+      filters:
+        "tag:Environment": "{{ tag_environment }}"
+        "tag:Name": "Mongo"
+        #"tag:CosmosVolume": "Mongo" # TODO Make voluems unique by comsos spec
+    register: mongo_volume
+
+  - set_fact:
+      mongo_volume_id: "{{ mongo_volume.volumes[0].id }}" # TODO Should check number of volumes
+
+- hosts: kube_minion[0]
+  remote_user: ubuntu
+  roles:
+    - common
+    - temp-dir
+
+  tasks:
+  - set_fact:
+      local_tmp_folder: "/tmp/docker_images"
+      mongo_volume_id: "{{ hostvars['localhost']['mongo_volume_id'] }}"
+
+  - name: Parameterize CRD
+    template:
+      src: "kubernetes/cosmos/crd.yml"
+      dest: "{{ cloud_tmp_folder }}/crd.yml"
+
+  - name: Apply crd
+    shell: KUBECONFIG=~/.kube/admin.conf kubectl apply -f "{{ cloud_tmp_folder }}/crd.yml"
+
+  - name: Parameterize service account
+    template:
+      src: "kubernetes/cosmos/service_account.yml"
+      dest: "{{ cloud_tmp_folder }}/service_account.yml"
+
+  - name: Apply service_account
+    shell: KUBECONFIG=~/.kube/admin.conf kubectl apply -f "{{ cloud_tmp_folder }}/service_account.yml"
+
+  - name: Parameterize operator
+    template:
+      src: "kubernetes/cosmos/operator.yml"
+      dest: "{{ cloud_tmp_folder }}/operator.yml"
+
+  - name: Apply operator
+    shell: KUBECONFIG=~/.kube/admin.conf kubectl apply -f "{{ cloud_tmp_folder }}/operator.yml"
+
+  - name: Wait for operator to be ready
+    shell: KUBECONFIG=~/.kube/admin.conf kubectl get pods -l app=cosmos-operator -o json
+    register: get_pods
+    until: get_pods.stdout|from_json|json_query('item[*].status.phase')|unique == ["Running"]
+    ignore_errors: yes
+
+  - debug: var=get_pods
+
+  - name: Parameterize cosmos spec
+    template:
+      src: "kubernetes/cosmos/cosmos.j2"
+      dest: "{{ cloud_tmp_folder }}/cosmos.yml"
+
+  - name: Apply cosmos spec
+    shell: KUBECONFIG=~/.kube/admin.conf kubectl apply -f "{{ cloud_tmp_folder }}/cosmos.yml"
+
+  - name: Wait for pods to be ready
+    shell: KUBECONFIG=~/.kube/admin.conf kubectl get pods -l cosmos=prod -o json
+    register: get_pods
+    until: get_pods.stdout|from_json|json_query('item[*].status.phase')|unique == ["Running"]

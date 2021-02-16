@@ -1,0 +1,2 @@
+- include_tasks: create_launch_template.yml
+  with_items: "{{ aws_host_types }}"

@@ -1,0 +1,28 @@
+tag_environment: "Production"
+#tag_environment: "Staging"
+
+# Security information
+key_pair_name: primary
+
+# Deployment information
+number_of_nodes: 1
+region: us-west-2
+zone: us-west-2a
+
+# Remote login user
+remote_user: ubuntu
+
+# Application information
+cosmo_services:
+  - earth
+  - saturn
+  - mars
+  - pan
+  - neptune
+infra_services: []
+
+kubelet_version: 1.17.12
+docker_version: 19.03
+
+app_dns: "ec2-34-216-22-144.us-west-2.compute.amazonaws.com:8443"
+app_protocol: "http"

@@ -1,0 +1,117 @@
+
+- name: Get apt-key.gpg
+  become: true
+  shell: curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+
+- name: Create kubeadm repo
+  become: true
+  template:
+    src: templates/kubernetes.list
+    dest: /etc/apt/sources.list.d/kubernetes.list
+
+- name: Update apt cache
+  become: true
+  apt:
+    update_cache: yes
+
+- name: Install kube and docker packages
+  become: true
+  apt:
+    name: "{{ packages }}"
+    state: present
+    force: true
+  vars:
+    packages:
+    - "kubelet={{ kubelet_version }}-00"
+    - "kubeadm={{ kubelet_version }}-00"
+    - "kubectl={{ kubelet_version }}-00"
+    - docker.io
+    - python3-distutils
+
+
+- name: Enable services
+  become: true
+  systemd:
+    name: "{{ item }}"
+    enabled: yes
+  loop:
+  - kubelet
+  - docker
+
+- name: Add custom kubeadm conf
+  become: true
+  template:
+    src: templates/10-kubeadm.conf
+    dest: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+
+- name: Reload systmd
+  become: true
+  shell: systemctl daemon-reload
+
+- name: Add kubeadm config
+  template:
+    src: templates/kubeadm.conf
+    dest: /tmp/kubeadm.conf
+
+- name: Initizalize kubeadm
+  become: true
+  shell: kubeadm init --node-name=$(curl http://169.254.169.254/latest/meta-data/local-hostname)  --config /tmp/kubeadm.conf
+  ignore_errors: True
+  register: kube_install
+
+- debug: var=kube_install
+
+- name: Copy flannel config
+  get_url:
+    url: https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+    dest: /tmp/flannel.yml
+
+- name: Set permissions
+  become: true
+  shell: "chmod 666 /etc/kubernetes/admin.conf"
+
+# TODO Check so it doesn't keep appending
+- name: Add export to .bashrc file
+  shell: "echo export KUBECONFIG=~/.kube/admin.conf >> $HOME/.bashrc"
+
+- name: Add kube completion to .bashrc file
+  shell: "echo \"source <(kubectl completion bash)\" >> $HOME/.bashrc"
+
+- name: Make sure kube directory exists
+  file:
+    path: "~{{ remote_user }}/.kube"
+    state: directory
+    mode: "0755"
+
+- name: Copy admin conf to ansible user
+  become: true
+  shell: "cp /etc/kubernetes/admin.conf ~{{ remote_user }}//.kube/admin.conf; chown -R {{ remote_user }}:{{ remote_user }} ~{{ remote_user }}/.kube"
+
+#- name: Remove taint from core nodes
+#  become: true
+#  shell: "KUBECONFIG=/etc/kubernetes/admin.conf kubectl taint nodes --all node-role.kubernetes.io/master-"
+#  ignore_errors: True # Can ignore because alsready done. Would be avoided if using k8s module.
+
+- name: Remove taint from core nodes
+  shell: "KUBECONFIG=/etc/kubernetes/admin.conf kubectl taint nodes --all node-role.kubernetes.io/master-"
+  ignore_errors: True # Can ignore because alsready done. Would be avoided if using k8s module.
+
+- name: Apply flannel file
+  shell: "KUBECONFIG=/etc/kubernetes/admin.conf kubectl apply -f /tmp/flannel.yml"
+
+- name: Copy get-pip file
+  get_url:
+    url: "https://bootstrap.pypa.io/get-pip.py"
+    dest: "/tmp/get-pip.py"
+    mode: '0700'
+
+- name: Run get pip
+  become: true
+  shell: python3 /tmp/get-pip.py
+
+- name: Install pip packages
+  become: true
+  pip:
+    name: "{{ item }}"
+  with_items:
+    - docker-py
