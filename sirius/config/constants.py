@@ -17,13 +17,11 @@ else:
     APP_DNS = f"{APP_NAME}.default.svc.cluster.local"
     LOG_PATH = f"/var/log/{APP_NAME}.log"
 
-COLLECTION = {"users": "iamUsers",
-              "password": "iamUserPasswords",
-              "pending": "iamPendingUsers",
-              "auth": "iamAuthTokens",
-              "centers": "iamCenter",
-              "bpaa": "bpaaNumber",
-              "points": "userPoints"}
+COLLECTION = {  "users": "centerUsers",
+                "centers": "bowlingCenters",
+                "members": "bpaaMembers",
+                "points": "userPoints",
+                "suspended": "suspendedCenters" }
 
 LOGO_URL = "https://kd-openbowl-service.s3-us-west-2.amazonaws.com/logo/OpenBowl_Logo.png"
 BANNERS_URL = "https://kd-openbowl-service.s3-us-west-2.amazonaws.com/centers/banners/"

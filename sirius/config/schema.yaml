@@ -19,7 +19,8 @@ externalApis:
                 read-only: False
                 type: "unicode"
                 hidden: False
-            Bpaa:
+            #TODO ADD PLATFORM FIELD
+            MemberID:
                 required: True
                 read-only: True
                 type: "unicode"
@@ -45,7 +46,7 @@ externalApis:
         supportedMethods:
             POST: "ADMIN"
         params:
-            Bpaa:
+            MemberID:
                 required: True
                 read-only: True
                 type: "unicode"
@@ -60,7 +61,17 @@ externalApis:
         supportedMethods:
             POST: "ADMIN"
         params:
-            Bpaa:
+            MemberID:
+                required: True
+                read-only: True
+                type: "unicode"
+                hidden: True
+    suspendServices:
+        apiUri: "/center/suspend-services"
+        supportedMethods:
+            POST: "ADMIN"
+        params:
+            MemberID:
                 required: True
                 read-only: True
                 type: "unicode"

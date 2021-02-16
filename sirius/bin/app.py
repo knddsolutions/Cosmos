@@ -67,14 +67,15 @@ class CenterRegistration(Resource):
             return apiClient.badRequest("Invalid parameters")
 
         #Check if center is already registered
-        center = mongoClient.getDocument(COLLECTION['centers'], {"MemberID":body['Bpaa']})
-
+        center = mongoClient.getDocument(COLLECTION['centers'], {"MemberID":body['MemberID']})
         if center['Results']:
-            logger.error("A center is already registered under BPAA number {}".format(body['bpaa']))
+            logger.error("A center is already registered under BPAA number {}".format(body['MemberID']))
             return apiClient.badRequest("This bowling center has already been registered")
 
         #Check if BPAA number is valid
-        if not bpaa = mongoClient.getDocument(COLLECTION['members'], {"MemberID": body['Bpaa']}):
+        bpaa = mongoClient.getDocument(COLLECTION['members'], {"MemberID": body['MemberID']})
+        
+        if bpaa != 200:
             logger.error("BPAA number {} is not valid".format(body['Bpaa']))
             return apiClient.badRequest("Please enter a valid BPAA number")
 
@@ -82,28 +83,28 @@ class CenterRegistration(Resource):
         ts = datetime.utcnow().isoformat()
 
         #Create temp data
-        tempData = {"Center" = body['Name'],
-                    "MemberID" = body['Bpaa'],
-                    "Email" = body['Email'],
-                    "Phone" = body['Phone'],
-                    "Timestamp" = ts}
+        tempData = {"CenterID" == body['Center'],
+                    "MemberID" == body['MemberID'],
+                    "Email" == body['Email'],
+                    "Phone" == body['Phone'],
+                    "Timestamp" == ts}
 
         #Store temp center data in pending collection
         res = mongoClient.createDocument(COLLECTION['pending'], tempData)
         if res != 200:
-            logger.error("Failed to create new temporary center registration for {}".format(tempData['Center']))
+            logger.error("Failed to create new temporary center registration for {}".format(tempData['CenterID']))
             return apiClient.internalServerError()
 
         #Send confirmation email to center registrant
         with open(CENTER_REQUEST_TEMPLATE, 'r') as stream:
             emailBodyTemplate = stream.read()
-        emailBody = emailBodyTemplate.format(logo_location=LOGO_URL, user_email=body['Center'])
+        emailBody = emailBodyTemplate.format(logo_location=LOGO_URL, user_email=body['CenterID'])
         SendEmail(body['Email'].lower(), "Confirmation", emailBody)
         
         #Send email to developer for verification
         with open(CONFIRM_CENTER_TEMPLATE, 'r') as stream:
             emailBodyTemplate = stream.read()
-        emailBody = emailBodyTemplate.format(logo_location=LOGO_URL, user_email=body['Center'])
+        emailBody = emailBodyTemplate.format(logo_location=LOGO_URL, user_email=body['CenterID'])
         SendEmail(DEV_USER, "New Center Request", emailBody)
         
         return apiClient.success("SUCCESS! Please check email for confirmation and further instrustions")
@@ -112,23 +113,20 @@ class CenterRegistration(Resource):
 class LoyaltyPoints(Resource):
     def post(self):
 
-        '''Check auth auth token first'''
+        '''Check center auth first'''
 
         #Check if auth token in headers
-        authToken = request.headers.get("X-Auth-Token")
-        if not authToken:
+        userMoid = request.headers.get("UserMoid")
+        if not Moid:
             return apiClient.unAuthorized({})
 
-        #Check if token matches in DB
-        auth = mongoClient.getDocument(COLLECTION['auth'], {"Token": authToken})
-        if not auth['Results']:
+        #Get user data from DB
+        userID = mongoClient.getDocument(COLLECTION['users'], {"UserMoid": userMoid})
+        if not userID['Results']:
             return apiClient.unAuthorized({})
         
-        #Check if token has expired
-        if TimestampExpired(res['Expires']):
-            logger.info("Auth token expired")
-            return apiClient.unAuthorized({})
-
+        #TODO CHECK CENTER
+        
         '''Now handle body'''
 
         #Load json
@@ -191,9 +189,9 @@ class ConfirmCenterRegistration(Resource):
             logger.warn(f"Invalid data: {body}")
             return apiClient.badRequest("Invalid parameters")
             
-        center = mongoClient.getDocument(COLLECTION['pending'], {"MemberID": body['Bpaa']})
+        center = mongoClient.getDocument(COLLECTION['pending'], {"MemberID": body['MemberID']})
         if not center['Results']:
-            logger.error("Failed to locate pending bpaa number {}".format(body['Bpaa']))
+            logger.error("Failed to locate pending bpaa number {}".format(body['MemberID']))
             return apiClient.badRequest("Failed to locate pending center")
             
         #TODO GENERATE CENTER ID??
@@ -203,18 +201,18 @@ class ConfirmCenterRegistration(Resource):
         
         #Insert pending center into active centers collection
         if not mongoClient.createDocument(COLLECTION['centers'], center):
-            logger.error("Failed to insert {} into centers collection".format(center['Name']))
+            logger.error("Failed to insert {} into centers collection".format(center['MemberID']))
             return apiClient.internalServerError()
             
         #Delete old pending center data
-        if not mongoClient.deleteDocument(COLLECTION['pending'], {"Bpaa": center['Bpaa']}):
-            logger.error("Failed to delete pending data for {}".format(center['Name']))
+        if not mongoClient.deleteDocument(COLLECTION['pending'], {"Bpaa": center['MemberID']}):
+            logger.error("Failed to delete pending data for {}".format(center['Center']))
             return apiClient.internalServerError()
             
         #Send approval email to center registrant
         with open(CENTER_APPROVED_TEMPLATE, 'r') as stream:
             emailBodyTemplate = stream.read()
-        emailBody = emailBodyTemplate.format(logo_location=LOGO_URL, user_email=center['Name'])
+        emailBody = emailBodyTemplate.format(logo_location=LOGO_URL, user_email=center['Center'])
         SendEmail(center['Email'].lower(), "Your Approved!", emailBody)
         
         return apiClient.success({})
@@ -239,17 +237,18 @@ class DeclineCenterRegistration(Resource):
             return apiClient.badRequest("Invalid parameters")
             
         #Delete doc from pending collection
-        if not mongoClient.deleteDocument(COLLECTION['pending'], {"Bpaa": body['Bpaa']}):
-            logger.error("Failed to delete declined centers data under Bpaa number {}".format(body['Bpaa']))
+        if not mongoClient.deleteDocument(COLLECTION['pending'], {"MemberID": body['MemberID']}):
+            logger.error("Failed to delete declined centers data under Bpaa number {}".format(body['MemberID']))
             return apiClient.badRequest("Failed to decline center")
             
         #Send decline email to center registrant
         with open(CENTER_DECLINED_TEMPLATE, 'r') as stream:
             emailBodyTemplate = stream.read()
-        emailBody = emailBodyTemplate.format(logo_location=LOGO_URL, user_email=center['Name'])
+        emailBody = emailBodyTemplate.format(logo_location=LOGO_URL, user_email=center['Center'])
         SendEmail(center['Email'].lower(), "An error occured...", emailBody)
 
-#Api for pulling all registered centers
+'''
+Api for pulling all registered centers
 class RegisteredCenters(Resource):
     def get(self):
     
@@ -260,28 +259,58 @@ class Coupons(Resource):
     def post(self):
         
         #TODO
-        
+'''
 #Api for suspending center services
 class SuspendService(Resource):
     def post(self):
     
-        #TODO
+        #TODO CHECK FOR DEVELOPER ADMIN PRIVILAGES??
+        
+        #Load json
+        try:
+            body = json.loads(request.data)
+        except Exception as e:
+            return apiClient.badRequest("Invalid json")
+            
+        #Verify body with schema
+        retCode, retMessage = VaSchema.verifyPost(SCHEMA['externalApis']['suspendCenter'], body)
+        if not retCode:
+            logger.warn(f"Failed to decline center: {retMessage}")
+            logger.warn(f"Invalid data: {body}")
+            return apiClient.badRequest("Invalid parameters")
+        
+        #Find registered center
+        center = mongoClient.getDocument(COLLECTION['centers'], {"MemberID": body['MemberID']})
+        if not center['Results']:
+            logger.error("Failed to locate center memberID {}".format(body['MemberID']))
+            return apiClient.badRequest("Failed to locate memberID")
+        
+        #Store registered center in suspended services collection
+        if not mongoClient.createDocument(COLLECTION['suspended'], center):
+            logger.error("Failed to create suspended center doc for memberID {}".format(body['MemberID']))
+            return apiClient.internalServerError()
+            
+        return apiClient.success({})
+            
         
 #Api for updating centers and bpaa #s in bpaa collection
 class UpdateMembers(Resource):
     def post(self):
         
+        #Drop members collection on update
+        if not COLLECTION['members'].drop():
+            logger.info("Members collection could not be dropped or does not exist")
+                
         #Open csv file in read mode
         with open(CENTERS_CSV, 'r') as csvfile:
             header = ["MemberID", "Center", "Contact"]
             csvreader = csv.reader(csvfile)
-            
-        #TODO CHECK FOR COLLECTIONS AND DROP ALL
         
+        #Create a doc for each row and store in members collection
         for row in csvreader:
             doc={}
             for n in range(0,len(header)):
-            doc[header[n]] = row[n]
+                doc[header[n]] = row[n]
             
             res = mongoClient.createDocument(COLLECTION['members'], doc)
             
@@ -289,9 +318,8 @@ class UpdateMembers(Resource):
                 logger.error("Failed to insert csv file")
                 return apiClient.internalServerError()
                 
-            
-        
-        
+        return apiClient.success({})
+                
             
 api.add_resource(CenterRegistration, '/center/registration')
 api.add_resource(ConfirmCenterRegistration, '/center/confirmed')
@@ -299,9 +327,9 @@ api.add_resource(DeclineCenterRegistration, '/center/declined')
 api.add_resource(Points, '/center/loyalty/points')
 api.add_resource(Coupons, '/center/loyalty/coupons')
 api.add_resource(SuspendService, '/center/suspend-services')
-api.add_resource(UpdateBpaa, '/center/update/members')
+api.add_resource(UpdateMembers, '/center/update/members')
 
 #Run app if main
 #Debug not for production
-if __name__ = '__main__':
+if __name__ == '__main__':
     app.run(debug=True, host= '0.0.0.0')
