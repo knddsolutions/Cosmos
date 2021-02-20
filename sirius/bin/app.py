@@ -13,7 +13,7 @@ from jupiter.vaapi import VaApi, RegisterApis
 from jupiter.vaschema import VaSchema
 from jupiter.valogger import VaLogger
 from jupiter.vautil import SendEmail
-from jupiter.constants import ALLOWED_METHODS, APP_DOMAIN_NAME
+from jupiter.constants import ALLOWED_METHODS
 from jupiter.vacrypto import EncryptPassword, \
                               VerifyPassword, \
                               GenerateToken, \
@@ -49,6 +49,18 @@ apiClient = VaApi(mongoClient, logger)
 
 #--------CENTER API'S---------
 #Api for center registration
+
+def _startup():
+    ''' Application startup method
+        1. Registers APIS
+    '''
+    logger.info("Application startup")
+
+    #_tempUpdateDB()
+    # Rgister api
+    RegisterApis(APP_DNS, SCHEMA, logger)
+
+
 class CenterRegistration(Resource):
     def post(self):
 
@@ -324,12 +336,13 @@ class UpdateMembers(Resource):
 api.add_resource(CenterRegistration, '/center/registration')
 api.add_resource(ConfirmCenterRegistration, '/center/confirmed')
 api.add_resource(DeclineCenterRegistration, '/center/declined')
-api.add_resource(Points, '/center/loyalty/points')
-api.add_resource(Coupons, '/center/loyalty/coupons')
+api.add_resource(LoyaltyPoints, '/center/loyalty/points')
+#api.add_resource(Coupons, '/center/loyalty/coupons')
 api.add_resource(SuspendService, '/center/suspend-services')
 api.add_resource(UpdateMembers, '/center/update/members')
 
 #Run app if main
 #Debug not for production
 if __name__ == '__main__':
+    _startup()
     app.run(debug=True, host= '0.0.0.0')
