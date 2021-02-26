@@ -3,43 +3,44 @@ externalApis:
         apiUri: "/center/registration"
         supportedMethods:
             POST: "Open"
+            GET: "USER"
         params:
             Name:
                 required: True
                 read-only: False
-                type: "unicode"
+                type: "str"
                 hidden: False
             Email:
                 required: True
                 read-only: False
-                type: "unicode"
+                type: "str"
                 hidden: False
             Phone:
                 required: True
                 read-only: False
-                type: "unicode"
+                type: "str"
                 hidden: False
-            #TODO ADD PLATFORM FIELD
+            Platform:
+                required: True
+                read-only: False
+                type:
+                  - "BownlingCenter"
+                hidden: False
             MemberID:
                 required: True
                 read-only: True
-                type: "unicode"
+                type: "str"
                 hidden: True
     loyaltyPoints:
         apiUri: "/center/loyalty/points"
         supportedMethods:
-            PATCH: "ADMIN"
+            PATCH: "USER"
             GET: "USER"
         params:
-            Email:
-                required: True
-                read-only: False
-                type: "unicode"
-                hidden: False
             Points:
                 required: True
                 read-only: False
-                type: "unicode"
+                type: "int"
                 hidden: False
     approveCenter:
         apiUri: "/center/confirmed"
@@ -49,12 +50,12 @@ externalApis:
             MemberID:
                 required: True
                 read-only: True
-                type: "unicode"
+                type: "str"
                 hidden: True
             Path:
                 required: True
                 read-only: True
-                type: "unicode"
+                type: "str"
                 hidden: True
     declineCenter:
         apiUri: "/center/declined"
@@ -64,7 +65,7 @@ externalApis:
             MemberID:
                 required: True
                 read-only: True
-                type: "unicode"
+                type: "str"
                 hidden: True
     suspendServices:
         apiUri: "/center/suspend-services"
@@ -74,10 +75,15 @@ externalApis:
             MemberID:
                 required: True
                 read-only: True
-                type: "unicode"
+                type: "str"
                 hidden: True
             
-
+    centerMembers:
+        apiUri: "/center/members"
+        supportedMethods:
+            GET: "USER"
+            POST: "USER"
+        params:
             
 
 
