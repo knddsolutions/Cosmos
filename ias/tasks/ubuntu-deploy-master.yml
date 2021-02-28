@@ -87,17 +87,12 @@
   become: true
   shell: "cp /etc/kubernetes/admin.conf ~{{ remote_user }}//.kube/admin.conf; chown -R {{ remote_user }}:{{ remote_user }} ~{{ remote_user }}/.kube"
 
-#- name: Remove taint from core nodes
-#  become: true
-#  shell: "KUBECONFIG=/etc/kubernetes/admin.conf kubectl taint nodes --all node-role.kubernetes.io/master-"
-#  ignore_errors: True # Can ignore because alsready done. Would be avoided if using k8s module.
-
 - name: Remove taint from core nodes
-  shell: "KUBECONFIG=/etc/kubernetes/admin.conf kubectl taint nodes --all node-role.kubernetes.io/master-"
+  shell: "KUBECONFIG=~{{ remote_user }}/.kube/admin.conf  kubectl taint nodes --all node-role.kubernetes.io/master-"
   ignore_errors: True # Can ignore because alsready done. Would be avoided if using k8s module.
 
 - name: Apply flannel file
-  shell: "KUBECONFIG=/etc/kubernetes/admin.conf kubectl apply -f /tmp/flannel.yml"
+  shell: "KUBECONFIG=~{{ remote_user }}/.kube/admin.conf kubectl apply -f /tmp/flannel.yml"
 
 - name: Copy get-pip file
   get_url:
