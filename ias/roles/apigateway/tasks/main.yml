@@ -19,12 +19,6 @@
 - set_fact:
     ec2_host_dns: "{{ ec2_instances.instances[0].public_dns_name }}:8081"
 
-- name: Get facts about lambda functions
-  lambda_facts:
-    profile: "{{ aws_profile_name}}"
-    region: "{{ region }}"
-  register: lambda_functions
-
 - name: Parameterize apigateway swagger spec
   template:
     src: templates/aws-api-gateway-hin-connect.j2
