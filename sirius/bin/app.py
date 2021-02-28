@@ -40,7 +40,6 @@ api = Api(app)
 
 #-----GLOBAL VARIABLES-----
 SCHEMA = VaSchema.loadYamlFile(SCHEMA_FILE)
-app = Flask(__name__)
 logger = VaLogger(APP_NAME, LOG_PATH)
 mongoClient = VaMongo(DB_NAME, logger)
 apiClient = VaApi(mongoClient, logger)
@@ -388,11 +387,11 @@ class Users(Resource):
         pass
 
 
-api.add_resource(CenterRegistration, '/center/registration')
+api.add_resource(CenterRegistration, '/centerRegister')
 api.add_resource(ConfirmCenterRegistration, '/center/confirmed')
 api.add_resource(DeclineCenterRegistration, '/center/declined')
 api.add_resource(LoyaltyPoints, '/center/loyalty/points')
-api.add_resource(LoyaltyPoints, '/center/loyalty/points/<str:moid>')
+api.add_resource(LoyaltyPoints, '/center/loyalty/points/<moid>')
 #api.add_resource(Coupons, '/center/loyalty/coupons')
 api.add_resource(SuspendService, '/center/suspend-services')
 api.add_resource(UpdateMembers, '/center/update/members')
@@ -401,4 +400,4 @@ api.add_resource(UpdateMembers, '/center/update/members')
 #Debug not for production
 if __name__ == '__main__':
     _startup()
-    app.run(debug=True, host= '0.0.0.0')
+    app.run(debug=True, host= '0.0.0.0', port=PORT)

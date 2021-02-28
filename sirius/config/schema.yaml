@@ -1,6 +1,6 @@
 externalApis:
     centerRegister:
-        apiUri: "/center/registration"
+        apiUri: "center/registration"
         supportedMethods:
             POST: "Open"
             GET: "USER"
@@ -24,7 +24,7 @@ externalApis:
                 required: True
                 read-only: False
                 type:
-                  - "BownlingCenter"
+                  - "BowlingCenter"
                 hidden: False
             MemberID:
                 required: True
@@ -32,7 +32,7 @@ externalApis:
                 type: "str"
                 hidden: True
     loyaltyPoints:
-        apiUri: "/center/loyalty/points"
+        apiUri: "center/loyalty/points"
         supportedMethods:
             PATCH: "USER"
             GET: "USER"
@@ -43,7 +43,7 @@ externalApis:
                 type: "int"
                 hidden: False
     approveCenter:
-        apiUri: "/center/confirmed"
+        apiUri: "center/confirmed"
         supportedMethods:
             POST: "ADMIN"
         params:
@@ -58,7 +58,7 @@ externalApis:
                 type: "str"
                 hidden: True
     declineCenter:
-        apiUri: "/center/declined"
+        apiUri: "center/declined"
         supportedMethods:
             POST: "ADMIN"
         params:
@@ -68,7 +68,7 @@ externalApis:
                 type: "str"
                 hidden: True
     suspendServices:
-        apiUri: "/center/suspend-services"
+        apiUri: "center/suspend-services"
         supportedMethods:
             POST: "ADMIN"
         params:
@@ -79,7 +79,7 @@ externalApis:
                 hidden: True
             
     centerMembers:
-        apiUri: "/center/members"
+        apiUri: "center/members"
         supportedMethods:
             GET: "USER"
             POST: "USER"
