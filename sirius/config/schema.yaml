@@ -3,7 +3,8 @@ externalApis:
         apiUri: "center/registration"
         supportedMethods:
             POST: "Open"
-            GET: "USER"
+            GET: "User"
+            PATCH: "Admin"
         params:
             Name:
                 required: True
@@ -31,58 +32,44 @@ externalApis:
                 read-only: True
                 type: "str"
                 hidden: True
+            Status:
+                required: False
+                read-only: True
+                type:
+                  - "Active"
+                  - "Inactive"
+                type: "str"
+                hidden: False
+                default: "Active"
     loyaltyPoints:
         apiUri: "center/loyalty/points"
         supportedMethods:
-            PATCH: "USER"
-            GET: "USER"
+            PATCH: "User"
+            GET: "User"
         params:
             Points:
                 required: True
                 read-only: False
                 type: "int"
                 hidden: False
-    approveCenter:
-        apiUri: "center/confirmed"
+    centerPending:
+        apiUri: "center/pending"
         supportedMethods:
-            POST: "ADMIN"
+            POST: "Admin"
+            DELETE: "Admin"
+            GET: "Admin"
         params:
-            MemberID:
-                required: True
-                read-only: True
-                type: "str"
-                hidden: True
             Path:
                 required: True
                 read-only: True
                 type: "str"
                 hidden: True
-    declineCenter:
-        apiUri: "center/declined"
-        supportedMethods:
-            POST: "ADMIN"
-        params:
-            MemberID:
-                required: True
-                read-only: True
-                type: "str"
-                hidden: True
-    suspendServices:
-        apiUri: "center/suspend-services"
-        supportedMethods:
-            POST: "ADMIN"
-        params:
-            MemberID:
-                required: True
-                read-only: True
-                type: "str"
-                hidden: True
-            
+
     centerMembers:
         apiUri: "center/members"
         supportedMethods:
-            GET: "USER"
-            POST: "USER"
+            GET: "User"
+            POST: "User"
         params:
             
 

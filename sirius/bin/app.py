@@ -13,7 +13,6 @@ from jupiter.vaapi import VaApi, RegisterApis
 from jupiter.vaschema import VaSchema
 from jupiter.valogger import VaLogger
 from jupiter.vautil import SendEmail
-from jupiter.constants import ALLOWED_METHODS
 from jupiter.vacrypto import EncryptPassword, \
                               VerifyPassword, \
                               GenerateToken, \
@@ -82,202 +81,112 @@ class CenterRegistration(Resource):
         #Check if BPAA number is valid
         bpaa = mongoClient.getDocument(COLLECTION['members'], {"MemberID": body['MemberID']})
         
-        if bpaa != 200:
-            logger.error(f"BPAA number {body['MemberID']} is not valid")
-            return apiClient.badRequest("Please enter a valid BPAA number")
+        #if bpaa != 200:
+        #    logger.error(f"BPAA number {body['MemberID']} is not valid")
+        #    return apiClient.badRequest(headers, "Please enter a valid BPAA number")
 
         #Create timestamp
         ts = datetime.utcnow().isoformat()
 
         #Create temp data
-        tempData = {"MemberID" == body['MemberID'],
-                    "Email" == body['Email'],
-                    "Phone" == body['Phone'],
-                    "Name" == body['Name'],
-                    "Timestamp" == ts}
+        tempData = {"MemberID": body['MemberID'],
+                    "Email": body['Email'],
+                    "Phone": body['Phone'],
+                    "Name": body['Name'],
+                    "Timestamp": ts}
 
         #Store temp center data in pending collection
-        res = mongoClient.createDocument(COLLECTION['pending'], tempData)
+        res, docMoid = mongoClient.createDocument(COLLECTION['pending'], tempData)
         if res != 200:
-            logger.error("Failed to create new temporary center registration for {tempData['CenterID']}")
-            return apiClient.internalServerError()
+            logger.error(f"Failed to create new temporary center registration for {tempData['MemberID']}")
+            return apiClient.internalServerError(headers)
 
         #Send confirmation email to center registrant
         with open(CENTER_REQUEST_TEMPLATE, 'r') as stream:
             emailBodyTemplate = stream.read()
-        emailBody = emailBodyTemplate.format(logo_location=LOGO_URL, user_email=body['CenterID'])
+        emailBody = emailBodyTemplate.format(logo_location=LOGO_URL, user_email=body['MemberID'])
         SendEmail(body['Email'].lower(), "Confirmation", emailBody)
         
         #Send email to developer for verification
-        with open(CONFIRM_CENTER_TEMPLATE, 'r') as stream:
+        with open(CENTER_CONFIRMATION_TEMPLATE, 'r') as stream:
             emailBodyTemplate = stream.read()
-        emailBody = emailBodyTemplate.format(logo_location=LOGO_URL, user_email=body['CenterID'])
-        SendEmail(DEV_USER, "New Center Request", emailBody)
+        emailBody = emailBodyTemplate.format(logo_location=LOGO_URL, user_email=body['MemberID'])
+        SendEmail(DEV_USER[0], "New Center Request", emailBody) # TODO need to make pan able to handle lists
 
-        return apiClient.success("SUCCESS! Please check email for confirmation and further instrustions")
+        return apiClient.success(headers, "SUCCESS! Please check email for confirmation and further instrustions")
 
-#Api to add or redeem points to user acount
-class LoyaltyPoints(Resource):
-    def patch(self, moid=None):
+class PendingCenterRegistration(Resource):
+    def __init__(self, resource):
+        self.schema = SCHEMA['externalApis']['centerPending']
+        self.xHeaders = json.loads(request.headers.get("x-auth"))
+        self.collection = COLLECTION['pending']
 
-        '''Check center auth first'''
+    def get(self, moid=None):
+        return apiClient.processRequest(self.xHeaders, request, self.collection,
+                                        self.schema, moid)
 
-        #Check if auth token in headers
-        headers = {}
-        xHeaders = json.loads(request.headers.get("x-auth"))
-        apiSchema = SCHEMA['externalApis']['loyaltyPoints']
-
+    def delete(self, moid=None):
+        # TODO Add reason field?
+        # Will remove the pending request
         if not moid:
-            return apiClient.badRequest(headers, "User moid required")
+            return apiClient.badRequest(self.xHeaders, "Pending center moid required")
 
-        # Get the requester iam moid
-        requesterMoid = xHeaders['IamUser']['Moid']
+        pendingCenter = mongoClient.getDocument(self.collection, {"Moid": moid})
+        if not pendingCenter['Results']:
+            return apiClient.notFound(self.xHeaders, "Pending regitration could not be found")
 
-        #Verify body with schema
-        valid, body = apiClient.verifyData(request, apiSchema)
-        if not valid:
-            return apiClient.badRequest(headers, body)
+        res = apiClient.processRequest(self.xHeaders, request, self.collection,
+                                       self.schema, moid)
 
-        # First look to see if the user being modified is valid
-        #Find user in collection
-        loyaltyUser = mongoClient.getDocument(COLLECTION['users'], {"Moid": moid})
-        if not user['Results']:
-            return apiClient.notFound("User account could not be found")
+        if res.status_code != 200:
+            return res
 
-        # Precautionary 
-        if len(loyaltyUser['Results']) > 1:
-            logger.error(f"Found more than one user with moid {moid}")
-            return apiClient.internalServerError()
-
-        centerMoid = loyaltyUser['Results'][0]['CenterMoid']
-    
-        #Get user data from DB
-        # Requester Moid is the IAM moid from Mars. CenterMoid is found by looking at the loyalty users moid
-        # There should be unique UserMoid/CenterMoid combinations in the users db
-        centerAdmin = mongoClient.getDocument(COLLECTION['users'], {"UserMoid": requesterMoid, "CenterMoid": centerMoid})
-        if not requesterUser['Results']:
-            return apiClient.unAuthorized(headers)
-
-        # Verify that the user making the patch is a center admin
-        if centerAdmin['Results'][0]['Type'] != "Admin":
-            return apiClient.forbidden(headers)
-
-        getPoints = mongoClient.getDocument(COLLECTION['points'], {"UserMoid": moid})
-        if not getPoints['Results']:
-            return apiClient.notFound("Users points could not be found")
-
-        #Create point variables
-        newPts = body['Points']
-        currentPts = getPoints['Results'][0]['Points']
-
-        #Add points
-        result = currentPts + newPts
-
-        #Results cannot be less than 0
-        if result < 0:
-            return apiClient.badRequest("User does not have enough points...Please try again!")
-
-        if not mongoClient.updateDocument(COLLECTION['points'], {"Points": result}, {"UserMoid": moid}):
-            logger.error(f"Failed to update new point value for {moid}")
-            return apiClient.internalServerError()
-
-        return apiClient.success(headers)
-
-    def get(self):
-        headers = {}
-        xHeaders = json.loads(request.headers.get("x-auth"))
-        logger.info(f"Headers: {xHeaders}")
-        userMoid = xHeaders['IamUser']['Moid']
-        userType = xHeaders['Iamuser']['Type']
-
-        if userType == "Admin":
-            # Process request and return
-            pass
-            # Allow any query
-
-        # TODO need to figure this out
-        # Maybe make it specfic to a center        
-        # Possibly have admin and users as seperated collections
-
-        return apiClient.success(headers)
-
-#Api to approve center registration
-class ConfirmCenterRegistration(Resource):
-    def post(self):
-        
-        #TODO CHECK FOR DEVELOPER ADMIN PRIVILAGES??
-      
-        #Load json
-        try:
-            body = json.loads(request.data)
-        except Exception as e:
-            return apiClient.badRequest("Invalid json")
-            
-        #Verify body with schema
-        retCode, retMessage = VaSchema.verifyPost(SCHEMA['externalApis']['approveCenter'], body)
-        
-        if not retCode:
-            logger.warn(f"Failed approval: {retMessage}")
-            logger.warn(f"Invalid data: {body}")
-            return apiClient.badRequest("Invalid parameters")
-            
-        center = mongoClient.getDocument(COLLECTION['pending'], {"MemberID": body['MemberID']})
-        if not center['Results']:
-            logger.error("Failed to locate pending bpaa number {}".format(body['MemberID']))
-            return apiClient.badRequest("Failed to locate pending center")
-            
-        #TODO GENERATE CENTER ID??
-        
-        #Insert file path for center logo
-        center['Logo'] = BANNERS_URL + body['Path']
-        
-        #Insert pending center into active centers collection
-        if not mongoClient.createDocument(COLLECTION['centers'], center):
-            logger.error("Failed to insert {} into centers collection".format(center['MemberID']))
-            return apiClient.internalServerError()
-            
-        #Delete old pending center data
-        if not mongoClient.deleteDocument(COLLECTION['pending'], {"Bpaa": center['MemberID']}):
-            logger.error("Failed to delete pending data for {}".format(center['Center']))
-            return apiClient.internalServerError()
-            
-        #Send approval email to center registrant
-        with open(CENTER_APPROVED_TEMPLATE, 'r') as stream:
-            emailBodyTemplate = stream.read()
-        emailBody = emailBodyTemplate.format(logo_location=LOGO_URL, user_email=center['Center'])
-        SendEmail(center['Email'].lower(), "Your Approved!", emailBody)
-        
-        return apiClient.success({})
-
-#Api to decline center registration
-class DeclineCenterRegistration(Resource):
-    def post(self):
-        
-        #TODO CHECK FOR DEVELOPER ADMIN PRIVILAGES??
-      
-        #Load json
-        try:
-            body = json.loads(request.data)
-        except Exception as e:
-            return apiClient.badRequest("Invalid json")
-            
-        #Verify body with schema
-        retCode, retMessage = VaSchema.verifyPost(SCHEMA['externalApis']['declineCenter'], body)
-        if not retCode:
-            logger.warn(f"Failed to decline center: {retMessage}")
-            logger.warn(f"Invalid data: {body}")
-            return apiClient.badRequest("Invalid parameters")
-            
-        #Delete doc from pending collection
-        if not mongoClient.deleteDocument(COLLECTION['pending'], {"MemberID": body['MemberID']}):
-            logger.error("Failed to delete declined centers data under Bpaa number {}".format(body['MemberID']))
-            return apiClient.badRequest("Failed to decline center")
-            
+        # Reason for checking 200 first is so we can send an email after deletion is confirmed
         #Send decline email to center registrant
         with open(CENTER_DECLINED_TEMPLATE, 'r') as stream:
             emailBodyTemplate = stream.read()
-        emailBody = emailBodyTemplate.format(logo_location=LOGO_URL, user_email=center['Center'])
-        SendEmail(center['Email'].lower(), "An error occured...", emailBody)
+        emailBody = emailBodyTemplate.format(logo_location=LOGO_URL, user_email=pendingCenter['Results'][0]['Email'])
+        SendEmail(pendingCenter['Results'][0]['Email'].lower(), "An error occured...", emailBody)
+
+        return res
+        
+    def post(self, moid=None):
+        # For posts we will move the pending document to centers
+
+        if not moid:
+            return apiClient.badRequest(self.xHeaders, "Pending center moid required")
+
+        pendingCenter = mongoClient.getDocument(self.collection, {"Moid": moid})
+
+        if not pendingCenter['Results']:
+            return apiClient.notFound(self.xHeaders, "Pending regitration could not be found")
+
+        #Verify body with schema
+        valid, body = apiClient.verifyData(request, self.schema)
+        if not valid:
+            return apiClient.badRequest(self.xHeaders, body)
+
+        postData = pendingCenter['Results'][0]
+        postData['Logo'] = BANNERS_URL + body['Path']
+
+        #Insert pending center into active centers collection
+        res, registrationMoid =  mongoClient.createDocument(COLLECTION['centers'], postData)
+        if not res:
+            logger.error("Failed to insert {} into centers collection".format(postData))
+            return apiClient.internalServerError(self.xHeaders)
+
+        #Delete old pending center data
+        if mongoClient.deleteDocument(self.collection, {"Moid": moid}) != 200:
+            logger.error("Failed to delete pending data for {}".format(moid))
+            return apiClient.internalServerError(self.xHeaders)
+
+        #Send approval email to center registrant
+        with open(CENTER_APPROVED_TEMPLATE, 'r') as stream:
+            emailBodyTemplate = stream.read()
+        emailBody = emailBodyTemplate.format(logo_location=LOGO_URL, user_email=postData['Email'])
+        SendEmail(postData['Email'].lower(), "You're Approved!", emailBody)
+        
+        return apiClient.success(self.xHeaders)
 
 '''
 Api for pulling all registered centers
@@ -293,6 +202,7 @@ class Coupons(Resource):
         #TODO
 '''
 #Api for suspending center services
+# TODO Make this a patch on centers. Add active field
 class SuspendService(Resource):
     def post(self):
     
@@ -386,18 +296,102 @@ class Users(Resource):
         # Global admin should not be able to delete
         pass
 
+#Api to add or redeem points to user acount
+class LoyaltyPoints(Resource):
+    def patch(self, moid=None):
+
+        '''Check center auth first'''
+
+        #Check if auth token in headers
+        headers = {}
+        xHeaders = json.loads(request.headers.get("x-auth"))
+        apiSchema = SCHEMA['externalApis']['loyaltyPoints']
+
+        if not moid:
+            return apiClient.badRequest(headers, "User moid required")
+
+        # Get the requester iam moid
+        requesterMoid = xHeaders['IamUser']['Moid']
+
+        #Verify body with schema
+        valid, body = apiClient.verifyData(request, apiSchema)
+        if not valid:
+            return apiClient.badRequest(headers, body)
+
+        # First look to see if the user being modified is valid
+        #Find user in collection
+        loyaltyUser = mongoClient.getDocument(COLLECTION['users'], {"Moid": moid})
+        if not loyaltyUser['Results']:
+            return apiClient.notFound("User account could not be found")
+
+        # Precautionary 
+        if len(loyaltyUser['Results']) > 1:
+            logger.error(f"Found more than one user with moid {moid}")
+            return apiClient.internalServerError()
+
+        centerMoid = loyaltyUser['Results'][0]['CenterMoid']
+    
+        #Get user data from DB
+        # Requester Moid is the IAM moid from Mars. CenterMoid is found by looking at the loyalty users moid
+        # There should be unique UserMoid/CenterMoid combinations in the users db
+        centerAdmin = mongoClient.getDocument(COLLECTION['users'], {"UserMoid": requesterMoid, "CenterMoid": centerMoid})
+        if not requesterUser['Results']:
+            return apiClient.unAuthorized(headers)
+
+        # Verify that the user making the patch is a center admin
+        if centerAdmin['Results'][0]['Type'] != "Admin":
+            return apiClient.forbidden(headers)
+
+        getPoints = mongoClient.getDocument(COLLECTION['points'], {"UserMoid": moid})
+        if not getPoints['Results']:
+            return apiClient.notFound("Users points could not be found")
+
+        #Create point variables
+        newPts = body['Points']
+        currentPts = getPoints['Results'][0]['Points']
+
+        #Add points
+        result = currentPts + newPts
+
+        #Results cannot be less than 0
+        if result < 0:
+            return apiClient.badRequest("User does not have enough points...Please try again!")
+
+        if not mongoClient.updateDocument(COLLECTION['points'], {"Points": result}, {"UserMoid": moid}):
+            logger.error(f"Failed to update new point value for {moid}")
+            return apiClient.internalServerError()
+
+        return apiClient.success(headers)
+
+    def get(self):
+        headers = {}
+        xHeaders = json.loads(request.headers.get("x-auth"))
+        logger.info(f"Headers: {xHeaders}")
+        userMoid = xHeaders['IamUser']['Moid']
+        userType = xHeaders['Iamuser']['Type']
+
+        if userType == "Admin":
+            # Process request and return
+            pass
+            # Allow any query
+
+        # TODO need to figure this out
+        # Maybe make it specfic to a center        
+        # Possibly have admin and users as seperated collections
+
+        return apiClient.success(headers)
 
 api.add_resource(CenterRegistration, '/centerRegister')
-api.add_resource(ConfirmCenterRegistration, '/center/confirmed')
-api.add_resource(DeclineCenterRegistration, '/center/declined')
 api.add_resource(LoyaltyPoints, '/center/loyalty/points')
 api.add_resource(LoyaltyPoints, '/center/loyalty/points/<moid>')
-#api.add_resource(Coupons, '/center/loyalty/coupons')
-api.add_resource(SuspendService, '/center/suspend-services')
+api.add_resource(PendingCenterRegistration, '/centerPending')
+api.add_resource(PendingCenterRegistration, '/centerPending/<moid>')
 api.add_resource(UpdateMembers, '/center/update/members')
+
+#api.add_resource(Coupons, '/center/loyalty/coupons')
 
 #Run app if main
 #Debug not for production
 if __name__ == '__main__':
     _startup()
-    app.run(debug=True, host= '0.0.0.0', port=PORT)
+    app.run(host= '0.0.0.0', port=PORT)
