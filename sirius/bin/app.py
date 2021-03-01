@@ -188,19 +188,73 @@ class PendingCenterRegistration(Resource):
         
         return apiClient.success(self.xHeaders)
 
-'''
-Api for pulling all registered centers
-class RegisteredCenters(Resource):
+class CenterUsers(Resource):
+    def __init__(self, resource):
+        self.schema = SCHEMA['externalApis']['centerUsers']
+        self.xHeaders = json.loads(request.headers.get("x-auth"))
+        self.collection = COLLECTION['users']
+        self.iamUser = self.xHeaders['IamUser']
+
     def get(self):
-    
-        #TODO
-    
-#Api for redeeming coupons
-class Coupons(Resource):
-    def post(self):
-        
-        #TODO
-'''
+        userType = xHeaders['Iamuser']['Type']
+
+        if userType == "Admin":
+            pass
+            # Allow any query
+
+        # Check for user in db
+
+
+        # If user, only return specific user info
+        # If center admin return all from the center
+        # If global admin return all
+ 
+        pass
+
+    def post(self, moid=None):
+
+        #Verify body with schema
+        valid, body = apiClient.verifyData(request, self.schema)
+        if not valid:
+            return apiClient.badRequest(self.xHeaders, body)
+
+        centerRegistration = mongoClient.getDocument(COLLECTION['centers'], {"Moid": body['CenterMoid']})
+        if not centerRegistration['Results']:
+            return apiClient.notFound("Center could not be found")
+
+        centerInfo = centerRegistration['Results'][0]
+
+        # Center id should be in body. This will be to create a user for a center if it does not exist
+        # Verify the user is not already in the db
+        pendingCenter = mongoClient.getDocument(self.collection, {"IamUserMoid": self.iamUser['Moid'], "CenterMoid": body['CenterMoid']})
+        if pendingCenter['Results']:
+            return apiClient.badRequest(self.xHeaders, "User already exists for this center")
+
+        # TODO Check birthdate
+
+        # Check the center to see if the user is the root user of the center to make them an admin
+        if centerInfo['Email'] == self.iamUser['Email']:
+            body['Type'] = "Admin"
+        else:
+            body['Type'] = "User"
+
+        body['IamUserMoid'] = self.iamUser['Moid']
+
+        res, moid = mongoClient.createDocument(self.collection, body)
+        if not res:
+            logger.error("Failed to insert {} into centers users".format(body))
+            return apiClient.internalServerError(self.xHeaders)
+
+        return apiClient.success(self.xHeaders, "Success")
+
+    def patch(self):
+        # Should be used to updated certain fields. Need to determine what is editable by user and center admins
+        pass
+    def delete(self):
+        # Can be done by the user or center admin
+        # Global admin should not be able to delete
+        pass
+
 #Api for suspending center services
 # TODO Make this a patch on centers. Add active field
 class SuspendService(Resource):
@@ -262,39 +316,6 @@ class UpdateMembers(Resource):
                 
         return apiClient.success({})
 
-class Users(Resource):
-    def get(self):
-        headers = {}
-        xHeaders = json.loads(request.headers.get("x-auth"))
-        logger.info(f"Headers: {xHeaders}")
-        userMoid = xHeaders['IamUser']['Moid']
-        userType = xHeaders['Iamuser']['Type']
-
-        if userType == "Admin":
-            pass
-            # Allow any query
-
-        # Check for user in db
-
-
-        # If user, only return specific user info
-        # If center admin return all from the center
-        # If global admin return all
- 
-        pass
-    def post(self):
-        # Center id should be in body. This will be to create a user for a center if it does not exist
-        # Verify the user is not already in the db
-        # Check the center to see if the user is the root user of the center to make them an admin
-        # If user already exists for the center this should return a 400
-        pass
-    def patch(self):
-        # Should be used to updated certain fields. Need to determine what is editable by user and center admins
-        pass
-    def delete(self):
-        # Can be done by the user or center admin
-        # Global admin should not be able to delete
-        pass
 
 #Api to add or redeem points to user acount
 class LoyaltyPoints(Resource):
@@ -334,7 +355,7 @@ class LoyaltyPoints(Resource):
         #Get user data from DB
         # Requester Moid is the IAM moid from Mars. CenterMoid is found by looking at the loyalty users moid
         # There should be unique UserMoid/CenterMoid combinations in the users db
-        centerAdmin = mongoClient.getDocument(COLLECTION['users'], {"UserMoid": requesterMoid, "CenterMoid": centerMoid})
+        centerAdmin = mongoClient.getDocument(COLLECTION['users'], {"IamUserMoid": requesterMoid, "CenterMoid": centerMoid})
         if not requesterUser['Results']:
             return apiClient.unAuthorized(headers)
 
@@ -342,7 +363,7 @@ class LoyaltyPoints(Resource):
         if centerAdmin['Results'][0]['Type'] != "Admin":
             return apiClient.forbidden(headers)
 
-        getPoints = mongoClient.getDocument(COLLECTION['points'], {"UserMoid": moid})
+        getPoints = mongoClient.getDocument(COLLECTION['points'], {"IamUserMoid": moid})
         if not getPoints['Results']:
             return apiClient.notFound("Users points could not be found")
 
@@ -357,7 +378,7 @@ class LoyaltyPoints(Resource):
         if result < 0:
             return apiClient.badRequest("User does not have enough points...Please try again!")
 
-        if not mongoClient.updateDocument(COLLECTION['points'], {"Points": result}, {"UserMoid": moid}):
+        if not mongoClient.updateDocument(COLLECTION['points'], {"Points": result}, {"IamUserMoid": moid}):
             logger.error(f"Failed to update new point value for {moid}")
             return apiClient.internalServerError()
 
@@ -381,12 +402,28 @@ class LoyaltyPoints(Resource):
 
         return apiClient.success(headers)
 
+'''
+Api for pulling all registered centers
+class RegisteredCenters(Resource):
+    def get(self):
+    
+        #TODO
+    
+#Api for redeeming coupons
+class Coupons(Resource):
+    def post(self):
+        
+        #TODO
+'''
+
 api.add_resource(CenterRegistration, '/centerRegister')
 api.add_resource(LoyaltyPoints, '/center/loyalty/points')
 api.add_resource(LoyaltyPoints, '/center/loyalty/points/<moid>')
 api.add_resource(PendingCenterRegistration, '/centerPending')
 api.add_resource(PendingCenterRegistration, '/centerPending/<moid>')
 api.add_resource(UpdateMembers, '/center/update/members')
+api.add_resource(CenterUsers, '/centerUsers')
+api.add_resource(CenterUsers, '/centerUsers/<moid>')
 
 #api.add_resource(Coupons, '/center/loyalty/coupons')
 

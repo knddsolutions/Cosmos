@@ -60,14 +60,30 @@ externalApis:
                 type: "str"
                 hidden: True
 
-    centerMembers:
-        apiUri: "center/members"
+    centerUsers:
+        apiUri: "center/users"
         supportedMethods:
             GET: "User"
             POST: "User"
         params:
-            
-
-
-
+            FirstName:
+                required: True
+                read-only: True
+                type: "str"
+                hidden: False
+            LastName:
+                required: True
+                read-only: True
+                type: "str"
+                hidden: False
+            BirthDate:
+                required: True
+                read-only: True
+                type: "str"
+                hidden: False
+            CenterMoid:
+                required: True
+                read-only: True
+                type: "str"
+                hidden: False
 
