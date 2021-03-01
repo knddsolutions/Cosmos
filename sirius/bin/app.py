@@ -60,20 +60,27 @@ def _startup():
 
 
 class CenterRegistration(Resource):
-    def post(self):
+    def __init__(self, resoure):
+        self.schema = SCHEMA['externalApis']['centerRegister']
+        self.xHeaders = json.loads(request.headers.get("x-auth"))
+        self.collection = COLLECTION['centers']
 
-        headers = {}
-        xHeaders = json.loads(request.headers.get("x-auth"))
+    def get(self, moid=None):
+        return apiClient.processRequest(self.xHeaders, request, self.collection,
+                                        self.schema, moid)
+    def patch(self, moid=None):
+        return apiClient.processRequest(self.xHeaders, request, self.collection,
+                                        self.schema, moid)
 
-        apiSchema = SCHEMA['externalApis']['centerRegister']
+    def post(self, moid=None):
 
         #Verify body with schema
-        valid, body = apiClient.verifyData(request, apiSchema)
+        valid, body = apiClient.verifyData(request, self.schema)
         if not valid:
-            return apiClient.badRequest(headers, body)
+            return apiClient.badRequest(self.xHeaders, body)
         
         #Check if center is already registered
-        center = mongoClient.getDocument(COLLECTION['centers'], {"MemberID":body['MemberID']})
+        center = mongoClient.getDocument(self.collection, {"MemberID": body['MemberID']})
         if center['Results']:
             logger.error("A center is already registered under BPAA number {body['MemberID']}")
             return apiClient.badRequest("This bowling center has already been registered")
@@ -83,37 +90,34 @@ class CenterRegistration(Resource):
         
         #if bpaa != 200:
         #    logger.error(f"BPAA number {body['MemberID']} is not valid")
-        #    return apiClient.badRequest(headers, "Please enter a valid BPAA number")
+        #    return apiClient.badRequest(self.xHeaders, "Please enter a valid BPAA number")
 
         #Create timestamp
         ts = datetime.utcnow().isoformat()
 
         #Create temp data
-        tempData = {"MemberID": body['MemberID'],
-                    "Email": body['Email'],
-                    "Phone": body['Phone'],
-                    "Name": body['Name'],
-                    "Timestamp": ts}
+        tempData = body
+        tempData['Timestamp'] = ts
 
         #Store temp center data in pending collection
         res, docMoid = mongoClient.createDocument(COLLECTION['pending'], tempData)
         if res != 200:
             logger.error(f"Failed to create new temporary center registration for {tempData['MemberID']}")
-            return apiClient.internalServerError(headers)
+            return apiClient.internalServerError(self.xHeaders)
 
         #Send confirmation email to center registrant
         with open(CENTER_REQUEST_TEMPLATE, 'r') as stream:
             emailBodyTemplate = stream.read()
-        emailBody = emailBodyTemplate.format(logo_location=LOGO_URL, user_email=body['MemberID'])
+        emailBody = emailBodyTemplate.format(logo_location=LOGO_URL, center_name=body['Center'], verify_url="test")
         SendEmail(body['Email'].lower(), "Confirmation", emailBody)
-        
+
         #Send email to developer for verification
         with open(CENTER_CONFIRMATION_TEMPLATE, 'r') as stream:
             emailBodyTemplate = stream.read()
-        emailBody = emailBodyTemplate.format(logo_location=LOGO_URL, user_email=body['MemberID'])
+        emailBody = emailBodyTemplate.format(logo_location=LOGO_URL, center_name=body['Center'])
         SendEmail(DEV_USER[0], "New Center Request", emailBody) # TODO need to make pan able to handle lists
 
-        return apiClient.success(headers, "SUCCESS! Please check email for confirmation and further instrustions")
+        return apiClient.success(self.xHeaders, "SUCCESS! Please check email for confirmation and further instrustions")
 
 class PendingCenterRegistration(Resource):
     def __init__(self, resource):
@@ -415,13 +419,14 @@ class Coupons(Resource):
         
         #TODO
 '''
-
-api.add_resource(CenterRegistration, '/centerRegister')
 api.add_resource(LoyaltyPoints, '/center/loyalty/points')
 api.add_resource(LoyaltyPoints, '/center/loyalty/points/<moid>')
+api.add_resource(UpdateMembers, '/center/update/members')
+
+api.add_resource(CenterRegistration, '/centerRegister')
+api.add_resource(CenterRegistration, '/centerRegister/<moid>')
 api.add_resource(PendingCenterRegistration, '/centerPending')
 api.add_resource(PendingCenterRegistration, '/centerPending/<moid>')
-api.add_resource(UpdateMembers, '/center/update/members')
 api.add_resource(CenterUsers, '/centerUsers')
 api.add_resource(CenterUsers, '/centerUsers/<moid>')
 

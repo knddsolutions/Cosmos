@@ -18,11 +18,10 @@ else:
     LOG_PATH = f"/var/log/{APP_NAME}.log"
 
 COLLECTION = {  "users": "centerUsers",
-                "centers": "bowlingCenters",
+                "centers": "centerRegistration",
                 "members": "bpaaMembers",
                 "points": "userPoints",
-                "pending": "centersPending",
-                "suspended": "suspendedCenters" }
+                "pending": "centersPending"}
 
 LOGO_URL = "https://kd-openbowl-service.s3-us-west-2.amazonaws.com/logo/OpenBowl_Logo.png"
 BANNERS_URL = "https://kd-openbowl-service.s3-us-west-2.amazonaws.com/centers/banners/"

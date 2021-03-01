@@ -3,22 +3,22 @@ externalApis:
         apiUri: "center/registration"
         supportedMethods:
             POST: "Open"
-            GET: "User"
+            GET: "Open"
             PATCH: "Admin"
         params:
             Center:
                 required: True
-                read-only: False
+                read-only: True
                 type: "str"
                 hidden: False
             Email:
                 required: True
-                read-only: False
+                read-only: True
                 type: "str"
                 hidden: False
             Platform:
                 required: True
-                read-only: False
+                read-only: True
                 type:
                   - "BowlingCenter"
                 hidden: False
@@ -29,13 +29,19 @@ externalApis:
                 hidden: True
             Status:
                 required: False
-                read-only: True
+                read-only: False
                 type:
                   - "Active"
                   - "Inactive"
                 type: "str"
                 hidden: False
                 default: "Active"
+            Logo:
+                required: False
+                read-only: False
+                type: "str"
+                hidden: False
+                default: ""
     loyaltyPoints:
         apiUri: "center/loyalty/points"
         supportedMethods:
