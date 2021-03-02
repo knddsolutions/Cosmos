@@ -115,7 +115,7 @@ class CenterRegistration(Resource):
         with open(CENTER_CONFIRMATION_TEMPLATE, 'r') as stream:
             emailBodyTemplate = stream.read()
         emailBody = emailBodyTemplate.format(logo_location=LOGO_URL, center_name=body['Center'])
-        SendEmail(DEV_USER[0], "New Center Request", emailBody) # TODO need to make pan able to handle lists
+        SendEmail(DEV_USER, "New Center Request", emailBody) # TODO need to make pan able to handle lists
 
         return apiClient.success(self.xHeaders, "SUCCESS! Please check email for confirmation and further instrustions")
 

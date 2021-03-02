@@ -28,8 +28,7 @@ BANNERS_URL = "https://kd-openbowl-service.s3-us-west-2.amazonaws.com/centers/ba
 CENTERS_CSV = "https://kd-openbowl-service.s3-us-west-2.amazonaws.com/files/2019+Membership_short.csv"
 
 ROOT_USERS = ["cnelson7265@gmail.com"]
-#DEV_USER = ["k.development@knddsolutions.com"]
-DEV_USER = ["cnelson7265@gmail.com"]
+DEV_USER = ["k.development@knddsolutions.com", "cnelson7265@gmail.com"]
 
 CRON_SLEEP_SECONDS = 86400
 
