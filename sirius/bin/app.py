@@ -30,7 +30,8 @@ from sirius.config.constants import DB_NAME, APP_NAME, \
                                   CRON_SLEEP_SECONDS, \
                                   LOGO_URL, \
                                   BANNERS_URL, \
-                                  CENTERS_CSV
+                                  CENTERS_CSV, \
+                                  Collections
 
 
 #Set name of flask instance
@@ -198,22 +199,39 @@ class CenterUsers(Resource):
         self.xHeaders = json.loads(request.headers.get("x-auth"))
         self.collection = COLLECTION['users']
         self.iamUser = self.xHeaders['IamUser']
+        if "Center-Moid" in self.xHeaders:
+            self.centerMoid = self.xHeaders['Center-Moid']
+        else:
+            self.centerMoid = None
 
-    def get(self):
-        userType = xHeaders['Iamuser']['Type']
-
-        if userType == "Admin":
-            pass
+    def get(self, moid=None):
+        if self.iamUser['Type'] == "Admin":
             # Allow any query
+            return apiClient.processRequest(self.xHeaders, request, self.collection,
+                                            self.schema, moid)
+
+        logger.info(f"Headers: {self.xHeaders}")
+        if not self.centerMoid:
+            overrideFilters = [("IamUserMoid", "$eq", self.iamUser['Moid'])]
+            return apiClient.processRequest(self.xHeaders, request, self.collection,
+                                            self.schema, moid, overrideFilters)
 
         # Check for user in db
+        centerUser = mongoClient.getDocument(self.collection, {"IamUserMoid": self.iamUser['Moid'], "CenterMoid": self.centerMoid})
+        if not centerUser['Results']:
+            return apiClient.forbidden(self.xHeaders)
 
+        if centerUser['Results'][0]['Type'] == "Admin":
+            overrideFilters = [("CenterMoid", "$eq", self.centerMoid)]
+            # In this case we force a search result for CenterMoid equal to the center in context
+            return apiClient.processRequest(self.xHeaders, request, self.collection,
+                                            self.schemma, moid, overrideFilters)
 
-        # If user, only return specific user info
-        # If center admin return all from the center
-        # If global admin return all
- 
-        pass
+        else:
+            overrideFilters = [("CenterMoid", "$eq", self.centerMoid), ("IamUserMoid", "$eq", self.iamUser['Moid'])]
+            # Here we force center and user id
+            return apiClient.processRequest(self.xHeaders, request, self.collection,
+                                            self.schema, moid, overrideFilters)
 
     def post(self, moid=None):
 
