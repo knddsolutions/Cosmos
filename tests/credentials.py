@@ -2,8 +2,8 @@ import json
 import requests
 from types import SimpleNamespace
 
-USERNAME = "cnelson7265@gmail.com"
-PASSWORD = "Nbv12345"
+USERNAME = ""
+PASSWORD = ""
 DNS = "https://openbowlservice.com"
 credsDict = {"username": USERNAME, "password": PASSWORD, "dns": DNS}
 
