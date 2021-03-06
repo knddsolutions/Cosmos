@@ -120,6 +120,10 @@ class CenterRegistration(Resource):
 
         return apiClient.success(self.xHeaders, "SUCCESS! Please check email for confirmation and further instrustions")
 
+    def delete(self, moid=None):
+        return apiClient.processRequest(self.xHeaders, request, self.collection,
+                                        self.schema, moid)
+
 class PendingCenterRegistration(Resource):
     def __init__(self, resource):
         self.schema = SCHEMA['externalApis']['centerPending']
@@ -225,7 +229,7 @@ class CenterUsers(Resource):
             overrideFilters = [("CenterMoid", "$eq", self.centerMoid)]
             # In this case we force a search result for CenterMoid equal to the center in context
             return apiClient.processRequest(self.xHeaders, request, self.collection,
-                                            self.schemma, moid, overrideFilters)
+                                            self.schema, moid, overrideFilters)
 
         else:
             overrideFilters = [("CenterMoid", "$eq", self.centerMoid), ("IamUserMoid", "$eq", self.iamUser['Moid'])]
@@ -242,7 +246,7 @@ class CenterUsers(Resource):
 
         centerRegistration = mongoClient.getDocument(COLLECTION['centers'], {"Moid": body['CenterMoid']})
         if not centerRegistration['Results']:
-            return apiClient.notFound("Center could not be found")
+            return apiClient.notFound(self.xHeaders, "Center could not be found")
 
         centerInfo = centerRegistration['Results'][0]
 
@@ -255,6 +259,7 @@ class CenterUsers(Resource):
         # TODO Check birthdate
 
         # Check the center to see if the user is the root user of the center to make them an admin
+        logger.info(f"Checking if admin center admin: {centerInfo['Email']}, userEmail: {self.iamUser['Email']}")
         if centerInfo['Email'] == self.iamUser['Email']:
             body['Type'] = "Admin"
         else:
@@ -262,55 +267,137 @@ class CenterUsers(Resource):
 
         body['IamUserMoid'] = self.iamUser['Moid']
 
-        res, moid = mongoClient.createDocument(self.collection, body)
+        logger.info(f"Creating user {body}")
+        res, centerUserMoid = mongoClient.createDocument(self.collection, body)
         if not res:
             logger.error("Failed to insert {} into centers users".format(body))
             return apiClient.internalServerError(self.xHeaders)
 
+
+        # Create loayalty points
+        loyaltyData = {"Points": 0, "CenterUserMoid": centerUserMoid, "CenterMoid": centerInfo['Moid']}
+        res, moid = mongoClient.createDocument(Collections.points, loyaltyData)
+
         return apiClient.success(self.xHeaders, "Success")
 
     def patch(self):
+        # TODO
         # Should be used to updated certain fields. Need to determine what is editable by user and center admins
         pass
-    def delete(self):
-        # Can be done by the user or center admin
-        # Global admin should not be able to delete
-        pass
 
-#Api for suspending center services
-# TODO Make this a patch on centers. Add active field
-class SuspendService(Resource):
-    def post(self):
-    
-        #TODO CHECK FOR DEVELOPER ADMIN PRIVILAGES??
-        
-        #Load json
-        try:
-            body = json.loads(request.data)
-        except Exception as e:
-            return apiClient.badRequest("Invalid json")
-            
-        #Verify body with schema
-        retCode, retMessage = VaSchema.verifyPost(SCHEMA['externalApis']['suspendCenter'], body)
-        if not retCode:
-            logger.warn(f"Failed to decline center: {retMessage}")
-            logger.warn(f"Invalid data: {body}")
-            return apiClient.badRequest("Invalid parameters")
-        
-        #Find registered center
-        center = mongoClient.getDocument(COLLECTION['centers'], {"MemberID": body['MemberID']})
-        if not center['Results']:
-            logger.error("Failed to locate center memberID {}".format(body['MemberID']))
-            return apiClient.badRequest("Failed to locate memberID")
-        
-        #Store registered center in suspended services collection
-        if not mongoClient.createDocument(COLLECTION['suspended'], center):
-            logger.error("Failed to create suspended center doc for memberID {}".format(body['MemberID']))
-            return apiClient.internalServerError()
-            
-        return apiClient.success({})
-            
-        
+    def delete(self, moid=None):
+        if not moid:
+            return apiClient.badRequest(self.xHeaders, "User moid required")
+
+        err, centerUser = mongoClient.getOneDocument(self.collection, {"Moid": moid})
+        if err:
+            return apiClient.notFound(self.xHeaders, "User does not exist")
+
+        err, requesterUser = mongoClient.getOneDocument(self.collection, {"IamUserMoid": self.iamUser['Moid'], "CenterMoid": centerUser['CenterMoid']})
+        if err:
+            return apiClient.forbidden(self.xHeaders)
+
+        if centerUser['Moid'] == requesterUser['Moid'] or requesterUser['Type'] == "Admin":
+            return apiClient.processRequest(self.xHeaders, request, self.collection,
+                                            self.schema, moid)
+        else:
+            return apiClient.forbidden(self.xHeaders)
+
+
+#Api to add or redeem points to user acount
+class LoyaltyPoints(Resource):
+    def __init__(self, resource):
+        self.schema = SCHEMA['externalApis']['loyaltyPoints']
+        self.xHeaders = json.loads(request.headers.get("x-auth"))
+        self.collection = Collections.points
+        self.iamUser = self.xHeaders['IamUser']
+        if "Center-Moid" in self.xHeaders:
+            self.centerMoid = self.xHeaders['Center-Moid']
+        else:
+            self.centerMoid = None
+
+    def patch(self, moid=None):
+        if not moid:
+            return apiClient.badRequest(self.xHeaders, "Points moid required")
+
+        # Verify body with schema
+        valid, body = apiClient.verifyData(request, self.schema)
+        if not valid:
+            return apiClient.badRequest(self.xHeaders, body)
+
+        # Get user points info
+        err, userPoints = mongoClient.getOneDocument(self.collection, {"Moid": moid})
+        if err:
+            logger.info(err)
+            return apiClient.notFound(self.xHeaders, "Users points could not be found")
+        logger.info(f"User points: {userPoints}")
+
+        # First look to see if the user being modified is valid
+        # Find user in collection
+        err, loyaltyUser = mongoClient.getOneDocument(Collections.users, {"Moid": userPoints['CenterUserMoid']})
+        if err:
+            logger.info(err)
+            logger.error("Found loyalty points, but not coresponding user")
+            return apiClient.internalServerError(self.xHeaders)
+        logger.info(f"Loyalty User: {loyaltyUser}")
+
+        centerMoid = loyaltyUser['CenterMoid']
+
+        # Get user data from DB
+        # Requester Moid is the IAM moid from Mars. CenterMoid is found by looking at the loyalty users moid
+        # There should be unique UserMoid/CenterMoid combinations in the users db
+        err, centerAdmin = mongoClient.getOneDocument(Collections.users, {"IamUserMoid": self.iamUser['Moid'], "CenterMoid": centerMoid})
+        if err:
+            logger.info(err)
+            return apiClient.unAuthorized(self.xHeaders)
+        logger.info(f"Center admin: {centerAdmin}")
+
+        # Verify that the user making the patch is a center admin
+        if centerAdmin['Type'] != "Admin":
+            return apiClient.forbidden(self.xHeaders)
+
+        #Create point variables
+        newPts = body['Points']
+        currentPts = userPoints['Points']
+
+        #Add points
+        result = currentPts + newPts
+
+        #Results cannot be less than 0
+        if result < 0:
+            return apiClient.badRequest(self.xHeaders, "User does not have enough points...Please try again!")
+
+        if not mongoClient.updateDocument(self.collection, {"Points": result}, {"Moid": moid}):
+            logger.error(f"Failed to update new point value for {moid}")
+            return apiClient.internalServerError(self.xHeaders)
+
+        return apiClient.success(self.xHeaders, "Success!")
+
+    def get(self, moid=None):
+        if self.iamUser['Type'] == "Admin":
+            # Allow any query
+            return apiClient.processRequest(self.xHeaders, request, self.collection,
+                                            self.schema, moid)
+
+        if not self.centerMoid:
+            return apiClient.badRequest("Center-Moid is missing in headers")
+
+        # Check for user in db
+        err, centerUser = mongoClient.getOneDocument(Collections.users, {"IamUserMoid": self.iamUser['Moid'], "CenterMoid": self.centerMoid})
+
+        logger.info(f"Center user type: {centerUser['Type']}")
+        if centerUser['Type'] == "Admin":
+            overrideFilters = [("CenterMoid", "$eq", self.centerMoid)]
+            # In this case we force a search result for CenterMoid equal to the center in context
+            return apiClient.processRequest(self.xHeaders, request, self.collection,
+                                            self.schema, moid, overrideFilters)
+
+        else:
+            overrideFilters = [("CenterUserMoid", "$eq", centerUser['Moid'])]
+            # Here we force center and user id
+            return apiClient.processRequest(self.xHeaders, request, self.collection,
+                                            self.schema, moid, overrideFilters)
+
 #Api for updating centers and bpaa #s in bpaa collection
 class UpdateMembers(Resource):
     def post(self):
@@ -338,107 +425,13 @@ class UpdateMembers(Resource):
                 
         return apiClient.success({})
 
-
-#Api to add or redeem points to user acount
-class LoyaltyPoints(Resource):
-    def patch(self, moid=None):
-
-        '''Check center auth first'''
-
-        #Check if auth token in headers
-        headers = {}
-        xHeaders = json.loads(request.headers.get("x-auth"))
-        apiSchema = SCHEMA['externalApis']['loyaltyPoints']
-
-        if not moid:
-            return apiClient.badRequest(headers, "User moid required")
-
-        # Get the requester iam moid
-        requesterMoid = xHeaders['IamUser']['Moid']
-
-        #Verify body with schema
-        valid, body = apiClient.verifyData(request, apiSchema)
-        if not valid:
-            return apiClient.badRequest(headers, body)
-
-        # First look to see if the user being modified is valid
-        #Find user in collection
-        loyaltyUser = mongoClient.getDocument(COLLECTION['users'], {"Moid": moid})
-        if not loyaltyUser['Results']:
-            return apiClient.notFound("User account could not be found")
-
-        # Precautionary 
-        if len(loyaltyUser['Results']) > 1:
-            logger.error(f"Found more than one user with moid {moid}")
-            return apiClient.internalServerError()
-
-        centerMoid = loyaltyUser['Results'][0]['CenterMoid']
-    
-        #Get user data from DB
-        # Requester Moid is the IAM moid from Mars. CenterMoid is found by looking at the loyalty users moid
-        # There should be unique UserMoid/CenterMoid combinations in the users db
-        centerAdmin = mongoClient.getDocument(COLLECTION['users'], {"IamUserMoid": requesterMoid, "CenterMoid": centerMoid})
-        if not requesterUser['Results']:
-            return apiClient.unAuthorized(headers)
-
-        # Verify that the user making the patch is a center admin
-        if centerAdmin['Results'][0]['Type'] != "Admin":
-            return apiClient.forbidden(headers)
-
-        getPoints = mongoClient.getDocument(COLLECTION['points'], {"IamUserMoid": moid})
-        if not getPoints['Results']:
-            return apiClient.notFound("Users points could not be found")
-
-        #Create point variables
-        newPts = body['Points']
-        currentPts = getPoints['Results'][0]['Points']
-
-        #Add points
-        result = currentPts + newPts
-
-        #Results cannot be less than 0
-        if result < 0:
-            return apiClient.badRequest("User does not have enough points...Please try again!")
-
-        if not mongoClient.updateDocument(COLLECTION['points'], {"Points": result}, {"IamUserMoid": moid}):
-            logger.error(f"Failed to update new point value for {moid}")
-            return apiClient.internalServerError()
-
-        return apiClient.success(headers)
-
-    def get(self):
-        headers = {}
-        xHeaders = json.loads(request.headers.get("x-auth"))
-        logger.info(f"Headers: {xHeaders}")
-        userMoid = xHeaders['IamUser']['Moid']
-        userType = xHeaders['Iamuser']['Type']
-
-        if userType == "Admin":
-            # Process request and return
-            pass
-            # Allow any query
-
-        # TODO need to figure this out
-        # Maybe make it specfic to a center        
-        # Possibly have admin and users as seperated collections
-
-        return apiClient.success(headers)
-
 '''
-Api for pulling all registered centers
-class RegisteredCenters(Resource):
-    def get(self):
-    
-        #TODO
-    
 #Api for redeeming coupons
 class Coupons(Resource):
     def post(self):
         
         #TODO
 '''
-api.add_resource(LoyaltyPoints, '/center/loyalty/points')
-api.add_resource(LoyaltyPoints, '/center/loyalty/points/<moid>')
 api.add_resource(UpdateMembers, '/center/update/members')
 
 api.add_resource(CenterRegistration, '/centerRegister')
@@ -447,6 +440,8 @@ api.add_resource(PendingCenterRegistration, '/centerPending')
 api.add_resource(PendingCenterRegistration, '/centerPending/<moid>')
 api.add_resource(CenterUsers, '/centerUsers')
 api.add_resource(CenterUsers, '/centerUsers/<moid>')
+api.add_resource(LoyaltyPoints, '/loyaltyPoints')
+api.add_resource(LoyaltyPoints, '/loyaltyPoints/<moid>')
 
 #api.add_resource(Coupons, '/center/loyalty/coupons')
 
