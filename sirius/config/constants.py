@@ -2,6 +2,7 @@
     Constants file for sirius
 '''
 import os
+from types import SimpleNamespace
 
 DB_NAME = "Global-Sirius"
 APP_NAME = "sirius"
@@ -22,6 +23,8 @@ COLLECTION = {  "users": "centerUsers",
                 "members": "bpaaMembers",
                 "points": "userPoints",
                 "pending": "centersPending"}
+
+Collections = SimpleNamespace(**COLLECTION)
 
 LOGO_URL = "https://kd-openbowl-service.s3-us-west-2.amazonaws.com/logo/OpenBowl_Logo.png"
 BANNERS_URL = "https://kd-openbowl-service.s3-us-west-2.amazonaws.com/centers/banners/"
