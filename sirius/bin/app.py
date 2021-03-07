@@ -32,6 +32,7 @@ from sirius.config.constants import DB_NAME, APP_NAME, \
                                   BANNERS_URL, \
                                   CENTERS_CSV, \
                                   Collections
+from sirius.api.CenterRegistration import CenterRegistration
 
 
 #Set name of flask instance
@@ -45,7 +46,6 @@ mongoClient = VaMongo(DB_NAME, logger)
 apiClient = VaApi(mongoClient, logger)
 #--------------------------
 
-
 #--------CENTER API'S---------
 #Api for center registration
 
@@ -58,71 +58,6 @@ def _startup():
     #_tempUpdateDB()
     # Rgister api
     RegisterApis(APP_DNS, SCHEMA, logger)
-
-
-class CenterRegistration(Resource):
-    def __init__(self, resoure):
-        self.schema = SCHEMA['externalApis']['centerRegister']
-        self.xHeaders = json.loads(request.headers.get("x-auth"))
-        self.collection = COLLECTION['centers']
-
-    def get(self, moid=None):
-        return apiClient.processRequest(self.xHeaders, request, self.collection,
-                                        self.schema, moid)
-    def patch(self, moid=None):
-        return apiClient.processRequest(self.xHeaders, request, self.collection,
-                                        self.schema, moid)
-
-    def post(self, moid=None):
-
-        #Verify body with schema
-        valid, body = apiClient.verifyData(request, self.schema)
-        if not valid:
-            return apiClient.badRequest(self.xHeaders, body)
-        
-        #Check if center is already registered
-        center = mongoClient.getDocument(self.collection, {"MemberID": body['MemberID']})
-        if center['Results']:
-            logger.error("A center is already registered under BPAA number {body['MemberID']}")
-            return apiClient.badRequest("This bowling center has already been registered")
-
-        #Check if BPAA number is valid
-        bpaa = mongoClient.getDocument(COLLECTION['members'], {"MemberID": body['MemberID']})
-        
-        #if bpaa != 200:
-        #    logger.error(f"BPAA number {body['MemberID']} is not valid")
-        #    return apiClient.badRequest(self.xHeaders, "Please enter a valid BPAA number")
-
-        #Create timestamp
-        ts = datetime.utcnow().isoformat()
-
-        #Create temp data
-        tempData = body
-        tempData['Timestamp'] = ts
-
-        #Store temp center data in pending collection
-        res, docMoid = mongoClient.createDocument(COLLECTION['pending'], tempData)
-        if res != 200:
-            logger.error(f"Failed to create new temporary center registration for {tempData['MemberID']}")
-            return apiClient.internalServerError(self.xHeaders)
-
-        #Send confirmation email to center registrant
-        with open(CENTER_REQUEST_TEMPLATE, 'r') as stream:
-            emailBodyTemplate = stream.read()
-        emailBody = emailBodyTemplate.format(logo_location=LOGO_URL, center_name=body['Center'], verify_url="test")
-        SendEmail(body['Email'].lower(), "Confirmation", emailBody)
-
-        #Send email to developer for verification
-        with open(CENTER_CONFIRMATION_TEMPLATE, 'r') as stream:
-            emailBodyTemplate = stream.read()
-        emailBody = emailBodyTemplate.format(logo_location=LOGO_URL, center_name=body['Center'])
-        SendEmail(DEV_USER, "New Center Request", emailBody) # TODO need to make pan able to handle lists
-
-        return apiClient.success(self.xHeaders, "SUCCESS! Please check email for confirmation and further instrustions")
-
-    def delete(self, moid=None):
-        return apiClient.processRequest(self.xHeaders, request, self.collection,
-                                        self.schema, moid)
 
 class PendingCenterRegistration(Resource):
     def __init__(self, resource):
