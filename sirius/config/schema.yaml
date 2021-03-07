@@ -5,6 +5,7 @@ externalApis:
             POST: "Open"
             GET: "Open"
             PATCH: "Admin"
+            DELETE: "Admin"
         params:
             Center:
                 required: True
@@ -43,7 +44,7 @@ externalApis:
                 hidden: False
                 default: ""
     loyaltyPoints:
-        apiUri: "center/loyalty/points"
+        apiUri: "center/loyaltyPoints"
         supportedMethods:
             PATCH: "User"
             GET: "User"
@@ -71,6 +72,7 @@ externalApis:
         supportedMethods:
             GET: "User"
             POST: "User"
+            DELETE: "User"
         params:
             FirstName:
                 required: True
