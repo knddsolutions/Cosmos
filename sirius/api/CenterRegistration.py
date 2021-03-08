@@ -1,9 +1,9 @@
 import json
-from flask import Flask, request
-from flask_restplus import Api, Resource
+from flask import request
+from flask_restplus import Resource
 from datetime import datetime
 from jupiter.vamongo import VaMongo
-from jupiter.vaapi import VaApi, RegisterApis
+from jupiter.vaapi import VaApi
 from jupiter.vaschema import VaSchema
 from jupiter.valogger import VaLogger
 from jupiter.vautil import SendEmail
@@ -11,15 +11,9 @@ from sirius.config.constants import DB_NAME, APP_NAME, \
                                     SCHEMA_FILE, \
                                     LOG_PATH, DEV_USER, \
                                     CENTER_CONFIRMATION_TEMPLATE, \
-                                    CENTER_APPROVED_TEMPLATE, \
-                                    CENTER_DECLINED_TEMPLATE, \
-                                    SUCCESS_PAGE_TEMPLATE, \
                                     CENTER_REQUEST_TEMPLATE, \
                                     LOGO_URL, \
-                                    BANNERS_URL, \
-                                    CENTERS_CSV, \
                                     Collections
-
 
 SCHEMA = VaSchema.loadYamlFile(SCHEMA_FILE)
 logger = VaLogger(APP_NAME, LOG_PATH)
@@ -30,7 +24,7 @@ class CenterRegistration(Resource):
     def __init__(self, resoure):
         self.schema = SCHEMA['externalApis']['centerRegister']
         self.xHeaders = json.loads(request.headers.get("x-auth"))
-        self.collection = Collecitons.centers
+        self.collection = Collections.centers
 
     def get(self, moid=None):
         return apiClient.processRequest(self.xHeaders, request, self.collection,
