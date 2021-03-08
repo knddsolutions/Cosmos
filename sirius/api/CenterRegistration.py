@@ -44,7 +44,7 @@ class CenterRegistration(Resource):
         center = mongoClient.getDocument(self.collection, {"MemberID": body['MemberID']})
         if center['Results']:
             logger.error("A center is already registered under BPAA number {body['MemberID']}")
-            return apiClient.badRequest("This bowling center has already been registered")
+            return apiClient.badRequest(self.xHeaders, "This bowling center has already been registered")
 
         #Check if BPAA number is valid
         bpaa = mongoClient.getDocument(Collections.members, {"MemberID": body['MemberID']})

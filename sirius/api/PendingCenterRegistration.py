@@ -11,7 +11,7 @@ from sirius.config.constants import DB_NAME, APP_NAME, \
                                     LOG_PATH, DEV_USER, \
                                     CENTER_APPROVED_TEMPLATE, \
                                     CENTER_DECLINED_TEMPLATE, \
-                                    LOGO_URL, \
+                                    LOGO_URL, BANNERS_URL, \
                                     Collections
 
 SCHEMA = VaSchema.loadYamlFile(SCHEMA_FILE)
@@ -71,7 +71,6 @@ class PendingCenterRegistration(Resource):
             return apiClient.badRequest(self.xHeaders, body)
 
         postData = pendingCenter['Results'][0]
-        postData['Logo'] = BANNERS_URL + body['Path']
 
         #Insert pending center into active centers collection
         res, registrationMoid =  mongoClient.createDocument(Collections.centers, postData)
