@@ -37,7 +37,7 @@ externalApis:
                 type: "str"
                 hidden: False
                 default: "Active"
-            Logo:
+            BannerURL:
                 required: False
                 read-only: False
                 type: "str"
@@ -60,12 +60,7 @@ externalApis:
             POST: "Admin"
             DELETE: "Admin"
             GET: "Admin"
-        params:
-            Path:
-                required: True
-                read-only: True
-                type: "str"
-                hidden: True
+        params: []
 
     centerUsers:
         apiUri: "center/users"
