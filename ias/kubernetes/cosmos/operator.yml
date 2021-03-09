@@ -13,7 +13,7 @@ spec:
         app: cosmos-operator
     spec:
       containers:
-      - image: localhost:30000/cosmos/neptune:latest
+      - image: "{{ registry_url }}/neptune:latest"
         imagePullPolicy: Always
         name: cosmos-operator
       terminationGracePeriodSeconds: 5

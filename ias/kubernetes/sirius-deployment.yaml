@@ -14,8 +14,8 @@ spec:
     spec:
       containers:
       - name: sirius
-        imagePullPolicy: IfNotPresent
-        image: localhost:30000/cosmos/sirius:latest
+        imagePullPolicy: Always
+        image: "{{ registry_url }}/sirius:latest"
         ports:
         - containerPort: 80
         env:

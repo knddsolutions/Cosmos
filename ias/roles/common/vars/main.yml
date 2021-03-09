@@ -26,3 +26,4 @@ docker_version: 19.03
 
 app_dns: "openbowlservice.com"
 app_protocol: "https"
+registry_url: "805908283827.dkr.ecr.us-west-2.amazonaws.com"
