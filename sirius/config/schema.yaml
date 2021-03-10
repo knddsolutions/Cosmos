@@ -89,4 +89,22 @@ externalApis:
                 read-only: True
                 type: "str"
                 hidden: False
+    centerCoupons:
+        apiUri: "center/coupons"
+        supportedMethods:
+            GET: "User"
+            POST: "User"
+            PATCH: "User"
+            DELETE: "User"
 
+        params:
+            Name:
+                required: True
+                read-only: True
+                type: "str"
+                hidden: False
+            ImageURL:
+                required: True
+                read-only: True
+                type: "str"
+                hidden: False
