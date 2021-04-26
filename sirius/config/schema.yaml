@@ -1,5 +1,5 @@
 externalApis:
-    centerRegister:
+    CenterRegistration:
         apiUri: "center/registration"
         supportedMethods:
             POST: "Open"
@@ -43,7 +43,7 @@ externalApis:
                 type: "str"
                 hidden: False
                 default: ""
-    loyaltyPoints:
+    LoyaltyPoints:
         apiUri: "center/loyaltyPoints"
         supportedMethods:
             PATCH: "User"
@@ -54,7 +54,7 @@ externalApis:
                 read-only: False
                 type: "int"
                 hidden: False
-    centerPending:
+    CenterPending:
         apiUri: "center/pending"
         supportedMethods:
             POST: "Admin"
@@ -62,7 +62,7 @@ externalApis:
             GET: "Admin"
         params: []
 
-    centerUsers:
+    CenterUsers:
         apiUri: "center/users"
         supportedMethods:
             GET: "User"

@@ -18,11 +18,12 @@ else:
     APP_DNS = f"{APP_NAME}.default.svc.cluster.local"
     LOG_PATH = f"/var/log/{APP_NAME}.log"
 
-COLLECTION = {  "users": "centerUsers",
-                "centers": "centerRegistration",
-                "members": "bpaaMembers",
-                "points": "userPoints",
-                "pending": "centersPending"}
+COLLECTION = { "centers": "CenterRegistration",
+               "points": "LoyaltyPoints",
+               "pending": "CenterPending",
+               "users": "CenterUsers",
+               "members": "bpaaMembers",
+             }
 
 Collections = SimpleNamespace(**COLLECTION)
 
