@@ -9,37 +9,9 @@
 						<table role="presentation" cellpadding="0" cellspacing="0" style="font-size:0px;width:100%;background:transparent" align="center" border="0">
 							<tbody>
 								<tr>
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-									<td style="text-align:center;vertical-align:top;direction:ltr;font-size:0px;padding:40px 0px">
-										<div aria-labelledby="mj-column-per-100" class="m_-7339446305679552858mj-column-per-100 m_-7339446305679552858outlook-group-fix" style="vertical-align:top;display:inline-block;direction:ltr;font-size:13px;text-align:left;width:100%">
-											<table role="presentation" cellpadding="0" cellspacing="0" width="100%" border="0">
-												<tbody>
-													<tr>
-														<td style="word-break:break-word;font-size:0px;padding:0px" align="center">
-															<table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border-spacing:0px" align="center" border="0">
-																<tbody>
-																	<tr>
-																		<td style="width:150px">
-																			<img alt="" title="" height="100px" src="{LOGO_URL}" width="500" class="CToWUd">
-																		</td>
-																	</tr>
-																</tbody>
-															</table>
-														</td>
-													</tr>
-												</tbody>
-											</table>
-=======
 									<td style="text-align:center;vertical-align:top;direction:ltr;font-size:0px;padding:10px 0px">
 										<div aria-labelledby="mj-column-per-100" class="m_-7339446305679552858mj-column-per-100 m_-7339446305679552858outlook-group-fix" style="vertical-align:top;display:inline-block;direction:ltr;font-size:13px;text-align:left;width:100%">
 											<h2 style="font-family:Whitney,Helvetica Neue,Helvetica,Arial,Lucida Grande,sans-serif;font-weight:500;font-size:20px;color:#ffffff;padding-left:10px;letter-spacing:0.27px">Hello {center_name}</h2>
->>>>>>> Stashed changes
-=======
-									<td style="text-align:center;vertical-align:top;direction:ltr;font-size:0px;padding:10px 0px">
-										<div aria-labelledby="mj-column-per-100" class="m_-7339446305679552858mj-column-per-100 m_-7339446305679552858outlook-group-fix" style="vertical-align:top;display:inline-block;direction:ltr;font-size:13px;text-align:left;width:100%">
-											<h2 style="font-family:Whitney,Helvetica Neue,Helvetica,Arial,Lucida Grande,sans-serif;font-weight:500;font-size:20px;color:#ffffff;padding-left:10px;letter-spacing:0.27px">Hello {center_name}</h2>
->>>>>>> Stashed changes
 										</div>
 									</td>
 								</tr>
@@ -51,31 +23,14 @@
       						<table role="presentation" cellpadding="0" cellspacing="0" style="font-size:0px;width:100%;background:#ffffff" align="center" border="0">
       							<tbody>
       								<tr>
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      									<td style="text-align:center;vertical-align:top;direction:ltr;font-size:0px;padding:40px 70px">
-=======
       									<td style="text-align:center;vertical-align:top;direction:ltr;font-size:0px;padding:20px 35px">
->>>>>>> Stashed changes
-=======
-      									<td style="text-align:center;vertical-align:top;direction:ltr;font-size:0px;padding:20px 35px">
->>>>>>> Stashed changes
       										<div aria-labelledby="mj-column-per-100" class="m_-7339446305679552858mj-column-per-100 m_-7339446305679552858outlook-group-fix" style="vertical-align:top;display:inline-block;direction:ltr;font-size:13px;text-align:left;width:100%">
       											<table role="presentation" cellpadding="0" cellspacing="0" width="100%" border="0">
       												<tbody>
       													<tr>
       														<td style="word-break:break-word;font-size:0px;padding:0px" align="left">
       															<div style="color:#737f8d;font-family:Whitney,Helvetica Neue,Helvetica,Arial,Lucida Grande,sans-serif;font-size:16px;line-height:24px;text-align:left">
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-  																		<h2 style="font-family:Whitney,Helvetica Neue,Helvetica,Arial,Lucida Grande,sans-serif;font-weight:500;font-size:20px;color:#4f545c;letter-spacing:0.27px">Hello {center_name},</h2>
-																			<p>We are sorry to inform you that your request to join BowlNow has been declined. We may have had a problem verifying your center. To resolve this issue, please contact us with our information listed below!<br>Thank you!</p>
-=======
 																			<p>We are sorry to inform you that your request to join BowlNow has been declined. We may have had a problem verifying your center. To resolve this issue, please contact us with our information listed below!<br><br>Thank you!</p>
->>>>>>> Stashed changes
-=======
-																			<p>We are sorry to inform you that your request to join BowlNow has been declined. We may have had a problem verifying your center. To resolve this issue, please contact us with our information listed below!<br><br>Thank you!</p>
->>>>>>> Stashed changes
           													</div>
           													</td>
           												</tr>
@@ -132,11 +87,6 @@
 					</div>
 				</div>
 			</div>
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
-=======
->>>>>>> Stashed changes
       <div style="margin:0px auto;max-width:640px;background:transparent">
         <table role="presentation" cellpadding="0" cellspacing="0" width="100%" border="0">
           <tbody>
@@ -156,37 +106,17 @@
           </tbody>
         </table>
       </div>
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       		<div style="margin:0px auto;max-width:640px;background:transparent">
       			<table role="presentation" cellpadding="0" cellspacing="0" style="font-size:0px;width:100%;background:transparent" align="center" border="0">
       				<tbody>
       					<tr>
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      						<td style="text-align:center;vertical-align:top;direction:ltr;font-size:0px;padding:20px 0px">
-=======
       						<td style="text-align:center;vertical-align:top;direction:ltr;font-size:0px;padding:0px 0px">
->>>>>>> Stashed changes
-=======
-      						<td style="text-align:center;vertical-align:top;direction:ltr;font-size:0px;padding:0px 0px">
->>>>>>> Stashed changes
       							<div aria-labelledby="mj-column-per-100" class="m_-7339446305679552858mj-column-per-100 m_-7339446305679552858outlook-group-fix" style="vertical-align:top;display:inline-block;direction:ltr;font-size:13px;text-align:left;width:100%">
       								<table role="presentation" cellpadding="0" cellspacing="0" width="100%" border="0">
       									<tbody>
       										<tr>
       											<td style="word-break:break-word;font-size:0px;padding:0px" align="center">
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      												<div style="color:#99aab5;font-family:Whitney,Helvetica Neue,Helvetica,Arial,Lucida Grande,sans-serif;font-size:12px;line-height:24px;text-align:center">
-=======
       												<div style="color:#99aab5;font-family:Whitney,Helvetica Neue,Helvetica,Arial,Lucida Grande,sans-serif;font-size:12px;line-height:12px;text-align:center">
->>>>>>> Stashed changes
-=======
-      												<div style="color:#99aab5;font-family:Whitney,Helvetica Neue,Helvetica,Arial,Lucida Grande,sans-serif;font-size:12px;line-height:12px;text-align:center">
->>>>>>> Stashed changes
       													Sent by BowlNow!
     												</div>
     											</td>
