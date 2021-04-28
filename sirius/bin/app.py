@@ -32,8 +32,8 @@ def _startup():
 
 api.add_resource(CenterRegistration, '/centerRegister')
 api.add_resource(CenterRegistration, '/centerRegister/<moid>')
-api.add_resource(PendingCenterRegistration, '/centerPending')
-api.add_resource(PendingCenterRegistration, '/centerPending/<moid>')
+api.add_resource(CenterPending, '/centerPending')
+api.add_resource(CenterPending, '/centerPending/<moid>')
 api.add_resource(CenterUsers, '/centerUsers')
 api.add_resource(CenterUsers, '/centerUsers/<moid>')
 api.add_resource(LoyaltyPoints, '/loyaltyPoints')

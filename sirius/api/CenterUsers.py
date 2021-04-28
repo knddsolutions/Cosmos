@@ -1,28 +1,13 @@
-import json
-from flask import request
-from flask_restplus import Resource
-from datetime import datetime
-from jupiter.vamongo import VaMongo
-from jupiter.vaapi import VaApi
-from jupiter.vaschema import VaSchema
-from jupiter.valogger import VaLogger
-from jupiter.vautil import SendEmail
-from sirius.config.constants import DB_NAME, APP_NAME, \
-                                    SCHEMA_FILE, \
-                                    LOG_PATH, \
-                                    Collections
+'''
+  Center Users api
+'''
 
-SCHEMA = VaSchema.loadYamlFile(SCHEMA_FILE)
-logger = VaLogger(APP_NAME, LOG_PATH)
-mongoClient = VaMongo(DB_NAME, logger)
-apiClient = VaApi(mongoClient, logger)
+from sirius.lib.MO import MO
+from sirius.config.constants import Collections
 
-class CenterUsers(Resource):
+class CenterUsers(MO):
     def __init__(self, resource):
-        self.schema = SCHEMA['externalApis']['centerUsers']
-        self.xHeaders = json.loads(request.headers.get("x-auth"))
-        self.collection = Collections.users
-        self.iamUser = self.xHeaders['IamUser']
+        super().__init__(self.__class__.__name__)
         if "Center-Moid" in self.xHeaders:
             self.centerMoid = self.xHeaders['Center-Moid']
         else:
@@ -31,74 +16,56 @@ class CenterUsers(Resource):
     def get(self, moid=None):
         if self.iamUser['Type'] == "Admin":
             # Allow any query
-            return apiClient.processRequest(self.xHeaders, request, self.collection,
-                                            self.schema, moid)
+            return self.processRequest(moid)
 
-        logger.info(f"Headers: {self.xHeaders}")
+        self.logger.info(f"Headers: {self.xHeaders}")
         if not self.centerMoid:
             overrideFilters = [("IamUserMoid", "$eq", self.iamUser['Moid'])]
-            return apiClient.processRequest(self.xHeaders, request, self.collection,
-                                            self.schema, moid, overrideFilters)
+            return self.processRequest(moid, overrideFilters)
 
         # Check for user in db
-        centerUser = mongoClient.getDocument(self.collection, {"IamUserMoid": self.iamUser['Moid'], "CenterMoid": self.centerMoid})
-        if not centerUser['Results']:
-            return apiClient.forbidden(self.xHeaders)
+        centerUser = self.mongoClient.getOneDocument(self.collection, {"IamUserMoid": self.iamUser['Moid'], "CenterMoid": self.centerMoid})
 
-        if centerUser['Results'][0]['Type'] == "Admin":
+        if centerUser['Type'] == "Admin":
             overrideFilters = [("CenterMoid", "$eq", self.centerMoid)]
             # In this case we force a search result for CenterMoid equal to the center in context
-            return apiClient.processRequest(self.xHeaders, request, self.collection,
-                                            self.schema, moid, overrideFilters)
+            return self.processRequest(moid, overrideFilters)
 
         else:
             overrideFilters = [("CenterMoid", "$eq", self.centerMoid), ("IamUserMoid", "$eq", self.iamUser['Moid'])]
             # Here we force center and user id
-            return apiClient.processRequest(self.xHeaders, request, self.collection,
-                                            self.schema, moid, overrideFilters)
+            return self.processRequest(moid, overrideFilters)
 
     def post(self, moid=None):
 
-        #Verify body with schema
-        valid, body = apiClient.verifyData(request, self.schema)
-        if not valid:
-            return apiClient.badRequest(self.xHeaders, body)
-
-        centerRegistration = mongoClient.getDocument(Collections.centers, {"Moid": body['CenterMoid']})
-        if not centerRegistration['Results']:
-            return apiClient.notFound(self.xHeaders, "Center could not be found")
-
-        centerInfo = centerRegistration['Results'][0]
+        centerInfo = self.mongoClient.getOneDocument(Collections.centers, {"Moid": self.body['CenterMoid']})
 
         # Center id should be in body. This will be to create a user for a center if it does not exist
         # Verify the user is not already in the db
-        pendingCenter = mongoClient.getDocument(self.collection, {"IamUserMoid": self.iamUser['Moid'], "CenterMoid": body['CenterMoid']})
-        if pendingCenter['Results']:
-            return apiClient.badRequest(self.xHeaders, "User already exists for this center")
+        self.mongoClient.getDocumentVerifyNot(self.collection, {"IamUserMoid": self.iamUser['Moid'], "CenterMoid": self.body['CenterMoid']})
 
         # TODO Check birthdate
 
         # Check the center to see if the user is the root user of the center to make them an admin
-        logger.info(f"Checking if admin center admin: {centerInfo['Email']}, userEmail: {self.iamUser['Email']}")
+        self.logger.info(f"Checking if admin center admin: {centerInfo['Email']}, userEmail: {self.iamUser['Email']}")
         if centerInfo['Email'] == self.iamUser['Email']:
-            body['Type'] = "Admin"
+            self.body['Type'] = "Admin"
         else:
-            body['Type'] = "User"
+            self.body['Type'] = "User"
 
-        body['IamUserMoid'] = self.iamUser['Moid']
+        self.body['IamUserMoid'] = self.iamUser['Moid']
 
-        logger.info(f"Creating user {body}")
-        res, centerUserMoid = mongoClient.createDocument(self.collection, body)
+        self.logger.info(f"Creating user {self.body}")
+        res, centerUserMoid = self.mongoClient.createDocument(self.collection, self.body)
         if not res:
-            logger.error("Failed to insert {} into centers users".format(body))
-            return apiClient.internalServerError(self.xHeaders)
-
+            self.logger.error(f"Failed to insert {self.body} into centers users")
+            return self.apiClient.internalServerError(self.xHeaders)
 
         # Create loayalty points
         loyaltyData = {"Points": 0, "CenterUserMoid": centerUserMoid, "CenterMoid": centerInfo['Moid']}
-        res, moid = mongoClient.createDocument(Collections.points, loyaltyData)
+        res, moid = self.mongoClient.createDocument(Collections.points, loyaltyData)
 
-        return apiClient.success(self.xHeaders, "Success")
+        return self.apiClient.success(self.xHeaders, "Success")
 
     def patch(self):
         # TODO
@@ -107,19 +74,13 @@ class CenterUsers(Resource):
 
     def delete(self, moid=None):
         if not moid:
-            return apiClient.badRequest(self.xHeaders, "User moid required")
+            return self.apiClient.badRequest(self.xHeaders, "User moid required")
 
-        err, centerUser = mongoClient.getOneDocument(self.collection, {"Moid": moid})
-        if err:
-            return apiClient.notFound(self.xHeaders, "User does not exist")
+        centerUser = self.mongoClient.getOneDocument(self.collection, {"Moid": moid})
 
-        err, requesterUser = mongoClient.getOneDocument(self.collection, {"IamUserMoid": self.iamUser['Moid'], "CenterMoid": centerUser['CenterMoid']})
-        if err:
-            return apiClient.forbidden(self.xHeaders)
+        requesterUser = self.mongoClient.getOneDocument(self.collection, {"IamUserMoid": self.iamUser['Moid'], "CenterMoid": centerUser['CenterMoid']})
 
         if centerUser['Moid'] == requesterUser['Moid'] or requesterUser['Type'] == "Admin":
-            return apiClient.processRequest(self.xHeaders, request, self.collection,
-                                            self.schema, moid)
+            return self.processRequest(moid)
         else:
-            return apiClient.forbidden(self.xHeaders)
-
+            return self.apiClient.forbidden(self.xHeaders)
