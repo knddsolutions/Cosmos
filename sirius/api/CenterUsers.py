@@ -24,7 +24,9 @@ class CenterUsers(MO):
             return self.processRequest(moid, overrideFilters)
 
         # Check for user in db
-        centerUser = self.mongoClient.getOneDocument(self.collection, {"IamUserMoid": self.iamUser['Moid'], "CenterMoid": self.centerMoid})
+        centerUser = self.mongoClient.getDocument(self.collection, {"IamUserMoid": self.iamUser['Moid'], "CenterMoid": self.centerMoid})
+        if not centerUser['Results']:
+            return self.apiClient.forbidden(self.xHeaders)
 
         if centerUser['Type'] == "Admin":
             overrideFilters = [("CenterMoid", "$eq", self.centerMoid)]
