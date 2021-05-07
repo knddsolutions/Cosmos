@@ -64,7 +64,7 @@ class CenterPending(MO):
         #Send approval email to center registrant
         with open(CENTER_APPROVED_TEMPLATE, 'r') as stream:
             emailBodyTemplate = stream.read()
-        emailBody = emailBodyTemplate.format(logo_location=LOGO_URL, user_email=postData['Email'])
+        emailBody = emailBodyTemplate.format(logo_location=LOGO_URL, user_email=postData['Email'], center_name=pendingCenter['Center'])
         SendEmail(postData['Email'].lower(), "You're Approved!", emailBody)
 
         return self.apiClient.success(self.xHeaders)

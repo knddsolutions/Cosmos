@@ -58,7 +58,7 @@ class CenterRegistration(MO):
         emailBody = emailBodyTemplate.format(logo_location=LOGO_URL, center_name=self.body['Center'])
         SendEmail(DEV_USER, "New Center Request", emailBody) # TODO need to make pan able to handle lists
 
-        return self.apiClient.success(self.xHeaders, "SUCCESS! Please check email for confirmation and further instrustions")
+        return self.apiClient.success(self.xHeaders, "Please check email for confirmation and further instrustions")
 
     def delete(self, moid=None):
         return self.processRequest(moid)
