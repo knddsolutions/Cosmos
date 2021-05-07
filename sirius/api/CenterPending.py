@@ -35,7 +35,7 @@ class CenterPending(MO):
         with open(CENTER_DECLINED_TEMPLATE, 'r') as stream:
             emailBodyTemplate = stream.read()
 
-        emailBody = emailBodyTemplate.format(logo_location=LOGO_URL, user_email=pendingCenter['Email'])
+        emailBody = emailBodyTemplate.format(logo_location=LOGO_URL, user_email=pendingCenter['Email'], center_name['Center'])
         SendEmail(pendingCenter['Email'].lower(), "An error occured...", emailBody) # TODO should be an error occourd?
 
         return res
