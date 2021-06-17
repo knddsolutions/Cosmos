@@ -12,17 +12,17 @@ spec:
         fsType: xfs
   rproxy:
     replicas: 1
-    appImage: localhost:30000/cosmos/saturn:latest
+    appImage: "{{ registry_url }}/saturn:latest"
     pullPolicy: Always
   auth:
-    appImage: localhost:30000/cosmos/mars:latest
+    appImage: "{{ registry_url }}/mars:latest"
     rootUsers: "cnelson7265@gmail.com"
     pullPolicy: Always
   nginx:
-    appImage: localhost:30000/cosmos/earth:latest
+    appImage: "{{ registry_url }}/earth:latest"
     pullPolicy: Always
   email:
-    appImage: localhost:30000/cosmos/pan:latest
+    appImage: "{{ registry_url }}/pan:latest"
     pullPolicy: Always
     serverName: smtp.gmail.com
     serverPort: 465
