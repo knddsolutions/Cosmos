@@ -30,14 +30,14 @@ def _startup():
 
 
 
-api.add_resource(CenterRegistration, '/centerRegister')
-api.add_resource(CenterRegistration, '/centerRegister/<moid>')
-api.add_resource(CenterPending, '/centerPending')
-api.add_resource(CenterPending, '/centerPending/<moid>')
-api.add_resource(CenterUsers, '/centerUsers')
-api.add_resource(CenterUsers, '/centerUsers/<moid>')
-api.add_resource(LoyaltyPoints, '/loyaltyPoints')
-api.add_resource(LoyaltyPoints, '/loyaltyPoints/<moid>')
+api.add_resource(CenterRegistration, '/CenterRegistration')
+api.add_resource(CenterRegistration, '/CenterRegistration/<moid>')
+api.add_resource(CenterPending, '/CenterPending')
+api.add_resource(CenterPending, '/CenterPending/<moid>')
+api.add_resource(CenterUsers, '/CenterUsers')
+api.add_resource(CenterUsers, '/CenterUsers/<moid>')
+api.add_resource(LoyaltyPoints, '/LoyaltyPoints')
+api.add_resource(LoyaltyPoints, '/LoyaltyPoints/<moid>')
 api.add_resource(UpdateMembers, '/center/updateMembers')
 
 #api.add_resource(Coupons, '/center/loyalty/coupons')

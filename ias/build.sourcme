@@ -1,0 +1,4 @@
+export DOCKER_REGISTRY=805908283827.dkr.ecr.us-west-2.amazonaws.com
+export AWS_ACCOUNT_ID=805908283827
+aws ecr get-login-password --region us-west-2 --profile ${AWS_ACCOUNT_ID}| docker login --username AWS --password-stdin ${DOCKER_REGISTRY}
+

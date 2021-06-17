@@ -19,10 +19,13 @@ cosmo_services:
   - mars
   - pan
   - neptune
-infra_services: []
+
+infra_services:
+  - sirius
 
 kubelet_version: 1.17.12
 docker_version: 19.03
 
 app_dns: "openbowlservice.com"
 app_protocol: "https"
+registry_url: "805908283827.dkr.ecr.us-west-2.amazonaws.com"
