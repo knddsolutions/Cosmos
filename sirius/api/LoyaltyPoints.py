@@ -20,6 +20,7 @@ class LoyaltyPoints(MO):
 
         # Get user points info
         userPoints = self.mongoClient.getOneDocument(self.collection, {"Moid": moid})
+        self.logger.info(f"Users Points: {userPoints}")
 
         # First look to see if the user being modified is valid
         # Find user in collection
