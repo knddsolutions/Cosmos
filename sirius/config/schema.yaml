@@ -46,7 +46,7 @@ externalApis:
     LoyaltyPoints:
         apiUri: "center/loyaltyPoints"
         supportedMethods:
-            PATCH: "Admin"
+            PATCH: "User"
             GET: "User"
         params:
             Points:
