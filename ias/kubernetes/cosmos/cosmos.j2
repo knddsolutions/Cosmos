@@ -26,8 +26,8 @@ spec:
     pullPolicy: Always
     serverName: smtp.gmail.com
     serverPort: 465
-    serverUsername: verify@hotimportnights.com
-    serverPassword: HINconnect2020
+    serverUsername: "{{ server_email }}"
+    serverPassword: "{{ server_password }}"
     serverFromName: "Hot Import Nights"
   env:
     DNS_NAME: "{{ app_dns }}"
